@@ -2,6 +2,7 @@ from functions.helper_global import *
 from functions.helper_finder import *
 from functions.helper_session import *
 import pandas as pd
+from functions.helper_session import *
 
 html_code = f"""
 <div id="scroll-to-me" style='background: transparent; height:1px;'></div>
@@ -19,26 +20,71 @@ init_service_metadata()
 init_config_options()
 init_session_state()
 
-with st.sidebar.expander("General Finder Advanced Options"):
+
+classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+classifications = classifications.dropna().loc[classifications['CLASSIFICATION'].str.strip() != '']
+
+company_name = session.sql('SELECT DISTINCT COMPANYNAME FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+company_name = company_name.dropna().loc[company_name['COMPANYNAME'].str.strip() != '']
+
+industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+industries = industries.dropna().loc[industries['INDUSTRY'].str.strip() != '']
+
+locations = session.sql('SELECT DISTINCT LOCATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+locations = locations.dropna().loc[locations['LOCATION'].str.strip() != '']
+
+connection_degrees = session.sql('SELECT DISTINCT CONNECTIONDEGREE FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+connection_degrees = connection_degrees.dropna().loc[connection_degrees['CONNECTIONDEGREE'].astype(str).str.strip() != '']
+
+with st.sidebar.expander("Cortex Search Options", expanded=True):
+
+    st.write("Filter Results")
+
     st.multiselect(
-        "How would you like to filter the results?",
-        ["Influencer", "Decision Maker", "Champion", "Gatekeeper", "End User", "Evaluator", "None"],
-        help="The option 'None' is a classification assigned to profiles. Please deselect the options given to you to return all results.",
-        key="general_filters"
+        "Location",
+        locations,
+        key="location_filter"
     )
+
+    st.multiselect(
+        "Industry",
+        industries,
+        key="industry_filter"
+    )
+
+    st.multiselect(
+        "Company Name",
+        company_name,
+        key="company_filter"
+    )
+        
+    st.multiselect(
+        "Classification",
+        classifications,
+        key="classification_filter"
+    )
+
+    st.multiselect(
+        "Connection Degree",
+        connection_degrees,
+        key="connectiondegree_filter"
+    )
+
+    st.markdown("---")
 
     st.slider(
     "Select number of documents to retrieve",
     key="general_num_retrieved_chunks",
     min_value=1,
+    value=80,
     max_value=300,
     help="*Limits the maximum number of documents returned from Cortex Search. A higher number will affect performace.*"
 )
-
-    st.text_area("System Prompt:", value=st.session_state.general_system_prompt, height=300, key="updated_general_system_prompt")
-    if st.button("Submit System Prompt", use_container_width=True, key="general_system", type="primary"):
-        st.session_state.general_system_prompt = st.session_state.updated_general_system_prompt
-        st.success("Successfully Added Prompt")
+    
+    # st.text_area("System Prompt:", value=st.session_state.general_system_prompt, height=300, key="updated_general_system_prompt")
+    # if st.button("Submit System Prompt", use_container_width=True, key="general_system", type="primary"):
+    #     st.session_state.general_system_prompt = st.session_state.updated_general_system_prompt
+    #     st.success("Successfully Added Prompt")
 
     if st.session_state.general_chat_history != "":
         with st.container(height=150):
@@ -60,7 +106,11 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
     del st.session_state.general_people
     del st.session_state.selected_prompt
     del st.session_state.general_generated_messages
-    del st.session_state.general_filters
+    del st.session_state.connectiondegree_filter
+    del st.session_state.classification_filter
+    del st.session_state.company_filter
+    del st.session_state.industry_filter
+    del st.session_state.location_filter
     st.rerun()
 
 

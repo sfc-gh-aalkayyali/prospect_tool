@@ -10,18 +10,15 @@ def table_complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
     response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
-    formatted_response = json.loads(response)
-
-    # Extract the messages
-    messages = formatted_response["choices"][0]["messages"]
+    print(response)
     
-    messages = messages.strip()
+    response = response.strip()
 
-    if messages.startswith("No profiles returned.") or messages.startswith("An error occurred:"):
-        return messages
+    if response.startswith("No profiles returned.") or response.startswith("An error occurred:"):
+        return response
 
     # Split individual profiles
-    profiles = re.split(r"\n\s*---\s*\n", messages)
+    profiles = re.split(r"\n\s*---\s*\n", response)
 
     # Extract fields from each profile
     data = [extract_fields(profile) for profile in profiles]
@@ -121,20 +118,20 @@ def create_prompt_general(user_question):
         if chat_history != []:
             question_summary = make_chat_history_summary(chat_history, user_question)
             st.session_state.general_chat_history = question_summary.replace("$", "\$")
-            results, search_column = query_cortex_search_service(question_summary, st.session_state.general_filters, st.session_state.general_num_retrieved_chunks)
+            results, search_column = query_cortex_search_service(question_summary)
             context_str = ""
             for i, r in enumerate(results, start=1):
                 context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
                 st.session_state.general_people.append(r[search_column])
             
         else:
-            results, search_column = query_cortex_search_service(user_question, st.session_state.general_filters, st.session_state.general_num_retrieved_chunks)
+            results, search_column = query_cortex_search_service(user_question)
             context_str = ""
             for i, r in enumerate(results, start=1):
                 context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
                 st.session_state.general_people.append(r[search_column])
     else:
-        results, search_column = query_cortex_search_service(user_question, st.session_state.general_filters, st.session_state.general_num_retrieved_chunks)
+        results, search_column = query_cortex_search_service(user_question)
         context_str = ""
         for i, r in enumerate(results, start=1):
             context_str += f"Context document {i}: {r[search_column]} \n" + "\n"

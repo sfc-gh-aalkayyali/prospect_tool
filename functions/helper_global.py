@@ -29,7 +29,6 @@ def init_session_state():
         ("linkedin_id", ""),
         ("profile_url", ""),
         ("persona_profile_selection", []),
-        ("general_num_retrieved_chunks", 80),
         ("general_profile_selection", []),
         ("general_filters", []),
         ("persona_filters", []),
@@ -427,26 +426,30 @@ def init_config_options():
         help="*Limits the number of chats for the LLM to consider as context during a conversation.*"
     )
         st.slider(
-            "Model Temperature",
+            "Temperature/Creativity",
             value=0.5,
             key="temperature",
             step=0.1,
             min_value=0.0,
             max_value=1.0,
-            help="*Higher temperature will result in more creative, diverse, but potentially less coherent outputs. Conversely, lower temperature makes the model more predictable, conservative, and focused.*"
-        )
+            help=f"""*Higher temperature will result in more creative, diverse, but potentially less coherent outputs. Conversely, lower temperature makes the model more predictable, conservative, and focused. 
+Changing the temperature affects how likely the model is to select less probable tokens during text generation. 
+Temperature is a scaling factor applied to the predicted probabilities of tokens. A temperature of 1 leaves the probabilities unchanged, while a temperature below 1 sharpens the distribution, making the most probable tokens even more likely to be selected.*""")
+        
         st.slider(
-            "Model Top_p",
+            "Top_p/Creativity",
             value=0.8,
             key="top_p",
             step=0.1,
             min_value=0.0,
             max_value=1.0,
-            help="Higher top_p will result in a wider range of words considered, leading to more varied results. Conversely lower top_p leads to a narrower range of words considered, focusing on the most likely options."
+            help=f"""*Higher Top_p will result in a wider range of words considered, leading to more varied results. Conversely lower top_p leads to a narrower range of words considered, focusing on the most likely options. 
+Changing the top_p affects affects the range of tokens the model can select from during text generation.
+When top_p is 1, the model considers all possible tokens. As you decrease the top_p value, only the most probable tokens that together make up the top p% of the probability mass are included, while the rest are discarded.*"""
         )
 
 
-def query_cortex_search_service(query, filters, input_limit):
+def query_cortex_search_service(query):
     db, schema = session.get_current_database(), session.get_current_schema()
 
     cortex_search_service = (
@@ -455,22 +458,50 @@ def query_cortex_search_service(query, filters, input_limit):
         .cortex_search_services["linkedin_service"]
     )
 
-    if filters:
-        filters_dict = {
-            "@or": [{"@eq": {"Classification": f}} for f in filters]
-        }
-            
-        context_documents = cortex_search_service.search(
-            query, columns=[],   filter = filters_dict, limit=input_limit
-        )
-    else:
-        context_documents = cortex_search_service.search(
-            query, columns=[], limit=input_limit
-        )
+    # Build the filters dynamically
+    filters = []
+
+    # Location filter
+    if st.session_state.location_filter:
+        filters.append({
+            "@or": [{"@eq": {"LOCATION": loc}} for loc in st.session_state.location_filter]
+        })
+
+    # Industry filter
+    if st.session_state.industry_filter:
+        filters.append({
+            "@or": [{"@eq": {"INDUSTRY": ind}} for ind in st.session_state.industry_filter]
+        })
+
+    # Company filter
+    if st.session_state.company_filter:
+        filters.append({
+            "@or": [{"@eq": {"COMPANYNAME": comp}} for comp in st.session_state.company_filter]
+        })
+
+    # Classification filter
+    if st.session_state.classification_filter:
+        filters.append({
+            "@or": [{"@eq": {"CLASSIFICATION": cls}} for cls in st.session_state.classification_filter]
+        })
+
+    # Connection degree filter
+    if st.session_state.connectiondegree_filter:
+        min_deg, max_deg = st.session_state.connectiondegree_filter
+        filters.append({
+            "@and": [{"@gte": {"CONNECTIONDEGREE": min_deg}}, {"@lte": {"CONNECTIONDEGREE": max_deg}}]
+        })
+
+    # Combine filters using @and if multiple filters exist
+    filters_dict = {"@and": filters} if filters else {}
+
+    # Perform the search with filters if present
+    context_documents = cortex_search_service.search(
+        query, columns=[], filter=filters_dict, limit=st.session_state.general_num_retrieved_chunks
+    )
+
     results = context_documents.results
-
     service_metadata = st.session_state.service_metadata
-
     search_col = service_metadata.get("linkedin_service")
 
     return results, search_col
@@ -562,14 +593,7 @@ def text_download(text):
     return text_bytesio
 
 def complete_function(prompt):
-    prompt_json = json.dumps(prompt)
 
-    response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
-    formatted_response = json.loads(response)
-
-    # Extract the messages
-    messages = formatted_response["choices"][0]["messages"]
+    response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
-    messages = messages.replace('\n', '  \n')
-    
-    return messages  
+    return response  
