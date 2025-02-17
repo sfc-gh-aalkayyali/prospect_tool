@@ -3,9 +3,9 @@ from functions.helper_generation import *
 from functions.helper_session import *
 import pandas as pd
 
-init_service_metadata()
-init_config_options()
 init_session_state()
+init_service_metadata()
+init_config_options_generation()
 
 with st.sidebar.expander("Message Generation Advanced Options"):
     st.text_area("System Prompt:", value=st.session_state.message_system_prompt, height=300, key="updated_message_system_prompt")

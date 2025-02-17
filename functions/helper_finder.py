@@ -5,7 +5,59 @@ from docx import Document
 from functions.helper_global import *
 import streamlit.components.v1 as components
 import re
-    
+
+def init_config_options_finder():
+    """
+    Initialize the configuration options in the Streamlit sidebar. Allow the user to select
+    a cortex search service, clear the conversation, toggle debug mode, and toggle the use of
+    chat history. Also provide advanced options to select a model, the number of context chunks,
+    and the number of chat messages to use in the chat history.
+    """
+    st.session_state.selected_cortex_search_service = "LINKEDIN_SERVICE"
+
+    with st.sidebar.expander("LLM Advanced Options"):
+        st.toggle("Use chat history", key="use_chat_history", value=True)
+        st.selectbox(
+            "Select LLM Model",
+            ("llama3.1-70b", "mistral-large2"),
+            key="selected_model", help="*It is recommended to choose llama3.1-70*"
+        )
+        st.slider(
+        "Select number of messages to use in chat history",
+        value=5,
+        key="num_chat_messages",
+        min_value=1,
+        max_value=10,
+        help="*Limits the number of chats for the LLM to consider as context during a conversation.*"
+    )
+        st.slider(
+            "Temperature/Creativity",
+            value=0.5,
+            key="temperature",
+            step=0.1,
+            min_value=0.0,
+            max_value=1.0,
+            help=f"""*Higher temperature will result in more creative, diverse, but potentially less coherent outputs. Conversely, lower temperature makes the model more predictable, conservative, and focused. 
+Changing the temperature affects how likely the model is to select less probable tokens during text generation. 
+Temperature is a scaling factor applied to the predicted probabilities of tokens. A temperature of 1 leaves the probabilities unchanged, while a temperature below 1 sharpens the distribution, making the most probable tokens even more likely to be selected.*""")
+        
+        st.slider(
+            "Top_p/Creativity",
+            value=0.0,
+            key="top_p",
+            step=0.1,
+            min_value=0.0,
+            max_value=1.0,
+            help=f"""*Higher Top_p will result in a wider range of words considered, leading to more varied results. Conversely lower top_p leads to a narrower range of words considered, focusing on the most likely options. 
+Changing the top_p affects affects the range of tokens the model can select from during text generation.
+When top_p is 1, the model considers all possible tokens. As you decrease the top_p value, only the most probable tokens that together make up the top p% of the probability mass are included, while the rest are discarded.*"""
+        )
+
+        if st.session_state.general_chat_history != "":
+            with st.container(height=150):
+                st.write("Chat history summary")
+                st.markdown(st.session_state.general_chat_history)
+
 def table_complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
@@ -112,36 +164,26 @@ def read_docx(file):
 
 def create_prompt_general(user_question):
     if st.session_state.use_chat_history:
-        chat_history = get_general_chat_history()
-        if chat_history != []:
-            question_summary = make_chat_history_summary(chat_history, user_question)
-            st.session_state.general_chat_history = question_summary.replace("$", "\$")
-            results, search_column = query_cortex_search_service(question_summary)
-            context_str = ""
-            for i, r in enumerate(results, start=1):
-                context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
-                st.session_state.general_people.append(r[search_column])
-            
-        else:
-            results, search_column = query_cortex_search_service(user_question)
-            context_str = ""
-            for i, r in enumerate(results, start=1):
-                context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
-                st.session_state.general_people.append(r[search_column])
+        chat_history = f"""
+<chat_history>
+{get_general_chat_history()}
+</chat_history>
+"""
     else:
-        results, search_column = query_cortex_search_service(user_question)
-        context_str = ""
-        for i, r in enumerate(results, start=1):
-            context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
-            st.session_state.general_people.append(r[search_column])
         chat_history = ""
+
+    results, search_column = query_cortex_search_service(user_question)
+    context_str = ""
+    st.session_state.general_people = []
+    for i, r in enumerate(results, start=1):
+        context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
+        st.session_state.general_people.append(r[search_column])
+    chat_history = ""
 
     system_prompt = st.session_state.general_system_prompt
     user_prompt = f"""
 [INST]
-<chat_history>
 {chat_history}
-</chat_history>
 <context>
 {context_str}
 </context>

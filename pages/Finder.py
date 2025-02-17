@@ -4,6 +4,9 @@ from functions.helper_session import *
 import pandas as pd
 from functions.helper_session import *
 
+## State Session Variables
+
+
 html_code = f"""
 <div id="scroll-to-me" style='background: transparent; height:1px;'></div>
 <script>
@@ -16,9 +19,9 @@ if (e) {{
 """
 icons = {"assistant": "🕵️‍♂️", "user": "👤"}
 
-init_service_metadata()
-init_config_options()
 init_session_state()
+init_service_metadata()
+init_config_options_finder()
 
 
 classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
@@ -86,10 +89,10 @@ with st.sidebar.expander("Cortex Search Options", expanded=True):
     #     st.session_state.general_system_prompt = st.session_state.updated_general_system_prompt
     #     st.success("Successfully Added Prompt")
 
-    if st.session_state.general_chat_history != "":
-        with st.container(height=150):
-            st.write("Chat history summary")
-            st.markdown(st.session_state.general_chat_history)
+    # if st.session_state.general_chat_history != "":
+    #     with st.container(height=150):
+    #         st.write("Chat history summary")
+    #         st.markdown(st.session_state.general_chat_history)
 
     if st.session_state.general_people != []:
         formatted_people = [p.replace("\n", "<br>") for p in st.session_state.general_people]
