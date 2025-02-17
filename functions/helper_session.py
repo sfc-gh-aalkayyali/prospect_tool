@@ -11,6 +11,5 @@ def create_session():
     except:
         from snowflake.snowpark import Session
         session = Session.builder.config("connection_name", "my_conn").create()
-    
-    session.sql("USE DATABASE LINKEDIN").collect()
+        session.sql("USE DATABASE LINKEDIN").collect()
     return session
