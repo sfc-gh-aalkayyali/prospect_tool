@@ -4,6 +4,7 @@ from snowflake.core import Root
 import pandas as pd
 import streamlit as st
 import json
+import io
 from snowflake.cortex import complete, CompleteOptions
 
 session = create_session()
