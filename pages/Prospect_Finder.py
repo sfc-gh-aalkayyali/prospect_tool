@@ -111,6 +111,11 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
     del st.session_state.company_filter
     del st.session_state.industry_filter
     del st.session_state.location_filter
+    st.session_state.connectiondegree_filter = []
+    st.session_state.classification_filter = []
+    st.session_state.company_filter = []
+    st.session_state.industry_filter = []
+    st.session_state.location_filter = []
     st.rerun()
 
 

@@ -504,6 +504,7 @@ def query_cortex_search_service(query):
     service_metadata = st.session_state.service_metadata
     search_col = service_metadata.get("linkedin_service")
 
+    print(results)
     return results, search_col
 
 
