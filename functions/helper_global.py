@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 import json
 import io
-from snowflake.cortex import complete, CompleteOptions
+from snowflake.cortex import Complete, CompleteOptions
 
 session = create_session()
 root = Root(session)
@@ -564,6 +564,12 @@ def text_download(text):
 def complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
-    response = complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
+    response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    formatted_response = json.loads(response)
+
+    # Extract the messages
+    messages = formatted_response["choices"][0]["messages"]
     
-    return response
+    messages = messages.replace('\n', '  \n')
+    
+    return messages  

@@ -1,6 +1,6 @@
 import streamlit as st
 import json
-from snowflake.cortex import complete, CompleteOptions
+from snowflake.cortex import Complete, CompleteOptions
 from docx import Document
 from functions.helper_global import *
 import streamlit.components.v1 as components
@@ -9,23 +9,19 @@ import re
 def table_complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
-    response = complete(
-        model=st.session_state.selected_model,
-        prompt=prompt_json,
-        options=CompleteOptions(
-            temperature=st.session_state.temperature,
-            top_p=st.session_state.top_p
-        ),
-        session=session
-    )
+    response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    formatted_response = json.loads(response)
 
-    response = response.strip()
+    # Extract the messages
+    messages = formatted_response["choices"][0]["messages"]
+    
+    messages = messages.strip()
 
-    if response.startswith("No profiles returned.") or response.startswith("An error occurred:"):
-        return response
+    if messages.startswith("No profiles returned.") or messages.startswith("An error occurred:"):
+        return messages
 
     # Split individual profiles
-    profiles = re.split(r"\n\s*---\s*\n", response)
+    profiles = re.split(r"\n\s*---\s*\n", messages)
 
     # Extract fields from each profile
     data = [extract_fields(profile) for profile in profiles]

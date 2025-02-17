@@ -16,8 +16,8 @@ entities:
       - functions/helper_generation.py
       - functions/helper_global.py
       - functions/helper_session.py
-      - pages/finder.py
-      - pages/generation.py
+      - pages/Prospect_Finder.py
+      - pages/Message_Generation.py
 
 
 
