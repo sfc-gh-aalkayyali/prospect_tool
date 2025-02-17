@@ -10,5 +10,4 @@ dependencies:
   - snowflake.core
   - st-theme
   - streamlit-extras
-  - snowflake-snowpark-python
   - streamlit
