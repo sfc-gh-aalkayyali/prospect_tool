@@ -56,7 +56,8 @@ Rules:
 7) Seperate each profile with three dashes "---" as per the template.
 8) You MUST output all your responses ONLY in markdown format.
 9) You MUST output all your responses ONLY using the two predefined templates below in the exact format. If a user is asking for profiles, use template 1. If a user is asking you a general or follow-up question use template 2.
-10) If no profiles are returned between the <context> and </context> tags, you must not return any profiles. 
+10) If no profiles are returned between the <context> and </context> tags, you must not return any profiles.
+11) If you are not returning any profiles, use Template 2.
 
 Template 1: 
 - First Name: [First Name]\n

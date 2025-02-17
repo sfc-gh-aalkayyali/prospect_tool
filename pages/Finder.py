@@ -298,3 +298,8 @@ if question:
 
             st.session_state.general_messages.append({"role": "assistant", "content": generated_response})
     st.rerun()
+    
+on = st.toggle("Activate feature")
+
+if on:
+    st.write("Feature activated!")
