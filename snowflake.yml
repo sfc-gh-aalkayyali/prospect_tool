@@ -12,5 +12,12 @@ entities:
       - streamlit_app.py
       - environment.yml
       - pages
-      - common/hello.py
+      - functions/helper_finder.py
+      - functions/helper_generation.py
+      - functions/helper_global.py
+      - functions/helper_session.py
+      - pages/finder.py
+      - pages/generation.py
+
+
 

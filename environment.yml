@@ -4,3 +4,11 @@ channels:
 dependencies:
   - streamlit
   - snowflake-snowpark-python
+  - python-docx
+  - snowflake
+  - snowflake-ml-python
+  - snowflake.core
+  - st-theme
+  - streamlit-extras
+  - snowflake-snowpark-python
+  - streamlit
