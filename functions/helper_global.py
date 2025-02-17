@@ -487,10 +487,10 @@ def query_cortex_search_service(query):
 
     # Connection degree filter
     if st.session_state.connectiondegree_filter:
-        min_deg, max_deg = st.session_state.connectiondegree_filter
         filters.append({
-            "@and": [{"@gte": {"CONNECTIONDEGREE": min_deg}}, {"@lte": {"CONNECTIONDEGREE": max_deg}}]
+            "@or": [{"@eq": {"CONNECTIONDEGREE": cls}} for cls in st.session_state.connectiondegree_filter]
         })
+
 
     # Combine filters using @and if multiple filters exist
     filters_dict = {"@and": filters} if filters else {}

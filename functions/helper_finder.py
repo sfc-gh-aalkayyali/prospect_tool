@@ -9,9 +9,7 @@ import re
 def table_complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
-    response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
-    print(response)
-    
+    response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
     response = response.strip()
 
     if response.startswith("No profiles returned.") or response.startswith("An error occurred:"):
