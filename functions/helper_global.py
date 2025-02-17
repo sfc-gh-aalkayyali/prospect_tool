@@ -16,7 +16,6 @@ def init_session_state():
         ("general_messages", []),
         ("general_chat_history", ""),
         ("persona_chat_history", ""),
-        ("service_metadata", {}),
         ("clear_conversation", False),
         ("general_people", []),
         ("generated_messages", {}),
