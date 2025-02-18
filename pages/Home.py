@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title(":information_source: Information")
+st.title(":snowboarder: Home")
 
 st.markdown("---")
 
