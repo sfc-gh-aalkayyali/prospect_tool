@@ -226,3 +226,53 @@ def create_query_prompt(user_question):
 """.strip()
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
     return prompt
+
+
+def generate_chat_title(chat_history):
+    if len(chat_history) == 0: 
+        return "No Title"
+    else:
+        with open("prompts/chat_history_title_prompt.txt", "r") as file:
+            system_prompt = file.read()
+
+        user_prompt = f"""
+[INST]
+<chat_history>
+{chat_history}
+</chat_history>
+[/INST]
+        """.strip()
+        prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        return Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=0.0, top_p=0.0), session=session)
+    
+def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summary, session=session):
+    if not chat_history:
+        return False
+    
+    try:
+        unique_chat_str = str(chat_id)
+        chat_history_str = str(chat_history)
+
+        merge_query = """
+        MERGE INTO CHAT_HISTORY AS target
+        USING (SELECT ? AS CHAT_DATE, ? AS USERNAME, ? AS CHAT_ID, ? AS CHAT_TITLE, ? AS CHAT_HISTORY, ? AS CHAT_SUMMARY) AS source
+        ON target.CHAT_ID = source.CHAT_ID
+        WHEN MATCHED THEN
+            UPDATE SET 
+                CHAT_DATE = source.CHAT_DATE,
+                USERNAME = source.USERNAME,
+                CHAT_TITLE = source.CHAT_TITLE,
+                CHAT_HISTORY = source.CHAT_HISTORY,
+                CHAT_SUMMARY = source.CHAT_SUMMARY
+        WHEN NOT MATCHED THEN
+            INSERT (CHAT_DATE, USERNAME, CHAT_ID, CHAT_TITLE, CHAT_HISTORY, CHAT_SUMMARY)
+            VALUES (source.CHAT_DATE, source.USERNAME, source.CHAT_ID, source.CHAT_TITLE, source.CHAT_HISTORY, source.CHAT_SUMMARY);
+        """
+
+        # Execute the query safely
+        session.sql(merge_query, params=[chat_date, username, unique_chat_str, chat_title, chat_history_str, chat_summary]).collect()
+        return True
+
+    except Exception as e:
+        print(f"Error inserting into CHAT_HISTORY: {e}")
+        return False

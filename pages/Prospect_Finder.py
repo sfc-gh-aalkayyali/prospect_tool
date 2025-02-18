@@ -2,6 +2,8 @@ from functions.helper_global import *
 from functions.helper_finder import *
 from functions.helper_session import *
 import pandas as pd
+from datetime import datetime
+import uuid
 from functions.helper_session import *
 
 html_code = f"""
@@ -97,6 +99,8 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
     del st.session_state.service_metadata
     del st.session_state.general_people
     del st.session_state.selected_prompt
+    del st.session_state.chat_id
+    st.session_state.chat_id = uuid.uuid4()
     if 'connectiondegree_filter' in st.session_state:
         del st.session_state.connectiondegree_filter
         st.session_state.connectiondegree_filter = []
@@ -119,6 +123,14 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
 
     st.rerun()
 
+if st.session_state["logged_in"]:
+    if st.sidebar.button("Save Chat", use_container_width=True, type="primary"):
+        username = "Ahmad_test123"
+        status = save_chat(datetime.now(), username, st.session_state.chat_id, generate_chat_title(st.session_state.general_messages), st.session_state.general_messages, st.session_state.general_chat_history)
+        if status:
+            st.sidebar.success("Successfully saved chat")
+        else:
+            st.sidebar.error("No chat to be saved or an error has occured")
 
 st.title(f":mag: Prospect Finder")
 st.write("")

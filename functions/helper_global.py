@@ -4,6 +4,7 @@ from snowflake.core import Root
 import pandas as pd
 import streamlit as st
 import json
+import uuid
 import io
 from snowflake.cortex import Complete, CompleteOptions
 
@@ -18,11 +19,13 @@ def init_session_state():
         ("general_chat_history", ""),
         ("clear_conversation", False),
         ("general_people", []),
+        ("logged_in", True), ## Make this false
         ("general_profile_selection", []),
         ("selected_prompt", None),
         ("general_profiles", pd.DataFrame()),
         ("customer_stories_docs", []),
         ("uploaded_emails", ""),
+        ("chat_id", uuid.uuid4()),
         ("selected_customer_stories_docs", []),
 ("marketing_message", """
 Hi [Name],
@@ -249,12 +252,14 @@ def make_chat_history_summary(chat_history, question):
             system_prompt = file.read()
 
         user_prompt = f"""
-    <chat_history>
-    {chat_history}
-    </chat_history>
-    <question>
-    {question}
-    </question>
+[INST]
+<chat_history>
+{chat_history}
+</chat_history>
+<question>
+{question}
+</question>
+[/INST]
         """
         prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
         summary = complete_function(prompt)
