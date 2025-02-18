@@ -249,24 +249,23 @@ def make_chat_history_summary(chat_history, question):
 
     print(chat_history)
     if chat_history: 
-        with open("prompts/query_system_prompt.txt", "r") as file:
+        with open("prompts/chat_history_prompt.txt", "r") as file:
             system_prompt = file.read()
 
         user_prompt = f"""
-    [INST]
     <chat_history>
     {chat_history}
     </chat_history>
     <question>
     {question}
     </question>
-    [/INST]
         """
         prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
         summary = complete_function(prompt)
         st.session_state.general_chat_history = summary
     else:
         summary = ""
+
     return summary
 
 @st.cache_data
