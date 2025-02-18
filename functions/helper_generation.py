@@ -1,13 +1,7 @@
 import streamlit as st
-import functions.helper_global
+from functions.helper_global import *
 
 def init_config_options_generation():
-    """
-    Initialize the configuration options in the Streamlit sidebar. Allow the user to select
-    a cortex search service, clear the conversation, toggle debug mode, and toggle the use of
-    chat history. Also provide advanced options to select a model, the number of context chunks,
-    and the number of chat messages to use in the chat history.
-    """
     st.session_state.selected_cortex_search_service = "LINKEDIN_SERVICE"
 
     with st.sidebar.expander("LLM Advanced Options"):

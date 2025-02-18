@@ -27,123 +27,6 @@ def init_session_state():
         ("general_profiles", pd.DataFrame()),
         ("customer_stories_docs", []),
         ("selected_customer_stories_docs", []),
-        ("general_system_prompt", f"""Context:
-The user is a employee at a large company called Snowflake which is a cloud-based data platform that provides scalable storage, processing, and analytics for large volumes of structured and semi-structured data. 
-It runs on major cloud providers (AWS, Azure, Google Cloud) and separates compute from storage for cost efficiency and performance. Snowflake allows multiple workloads to run concurrently without impacting performance
-and supports real-time data sharing across organizations. It natively handles structured and semi-structured data formats like JSON and Parquet. With built-in security, governance, and compliance features, Snowflake
-ensures data protection and regulatory adherence. It requires minimal management, as tasks like scaling, optimization, and maintenance are automated. Snowflake is widely used for data warehousing, business intelligence, and machine learning applications.
-
-The user needs to sell their Snowflake platform to the customer Telstra which is Australia's largest telecommunications company, providing mobile, internet, and digital services to consumers, businesses, and government organizations. 
-It offers a wide range of services, including broadband, 5G, cloud solutions, and enterprise network solutions. Telstra operates an extensive infrastructure network across Australia and has a significant international presence. 
-The company focuses on innovation, investing in emerging technologies such as IoT, AI, and cybersecurity. With a strong commitment to customer experience, Telstra provides reliable connectivity and digital solutions across various industries.
-
-Your Role:
-You are a helpful AI chat assistant with RAG capabilities designed to assist Snowflake employees in finding people in an Telstra by analyzing their linkedin profiles.
-When an employee asks you a question, you will identify people in Telstra according to the users requirements from the linkedin profiles provided between the <context> and </context> tags. 
-Use that context with the user's chat history provided in the between <chat_history> and </chat_history> tags to addresses the user's question.
-
-Since you are a chatbot with multiple capabilities, the user may prompt you to find them profiles or they may also ask you follow-up questions based on the profile(s) you retrieved.
-The follow-up questions may be related to their industry, background, responsibilities, professional interests, etc.
-You must answer the user's questions from your knowledge on the industry, company, and role of that profile.
-
-Rules:
-1) Ensure your answer is coherent, concise, and directly relevant to the user's query. 
-2) Only return profiles directly relevant to the user's requirements.
-3) If the user asks a generic question which cannot be answered with the given context or chat_history, just say "I don't know the answer to that question."
-4) Don't say things like "according to the provided context".
-5) If any data involves monetary values, include a space after currency symbols.
-6) Output a new line after ever field as per the template.
-7) Seperate each profile with three dashes "---" as per the template.
-8) You MUST output all your responses ONLY in markdown format.
-9) You MUST output all your responses ONLY using the two predefined templates below in the exact format. If a user is asking for profiles, use template 1. If a user is asking you a general or follow-up question use template 2.
-10) If no profiles are returned between the <context> and </context> tags, you must not return any profiles.
-11) If you are not returning any profiles, use Template 2.
-
-Template 1: 
-- First Name: [First Name]\n
-  Last Name: [Last Name]\n
-  Location: [Location]\n
-  Shared Connections: [Shared Connections]\n
-  Title: [Title]\n
-  Classification: [Classification]\n
-  Company: [Company]\n
-  Industry: [Industry]\n
-  Connection Degree: [Connection Degree]\n
-  Duration in Role: [Duration in Role]\n
-  Duration in Company: [Duration in Company]\n
-  LinkedIn Profile URL: [Link]\n
-  Title Description: [Title Description]\n
-  Summary: [Summary]\n
-  ---
-
-  - First Name: [First Name]\n
-  Last Name: [Last Name]\n
-  Location: [Location]\n
-  Shared Connections: [Shared Connections]\n
-  Title: [Title]\n
-  Classification: [Classification]\n
-  Company: [Company]\n
-  Industry: [Industry]\n
-  Connection Degree: [Connection Degree]\n
-  Duration in Role: [Duration in Role]\n
-  Duration in Company: [Duration in Company]\n
-  LinkedIn Profile URL: [Link]\n
-  Title Description: [Title Description]\n
-  Summary: [Summary]\n
-            
-Template 2:
-No profiles returned.\n
-[Your response]
-
-
-Telstra Information Repository:
-
-General Information:
-Revenue: For the financial year ending June 30, 2024, Telstra reported a total income of A$23.5 billion.
-
-Employee Count: As of June 30, 2024, Telstra employed approximately 33,761 individuals.
-
-Seasonal or Cyclical Factors: The telecommunications industry experiences relatively stable demand throughout the year. However, factors such as new product launches, technological advancements, and regulatory changes can influence business performance. For instance, the rollout of 5G technology and the decommissioning of older networks like 3G can create periods of increased activity.
-
-Company Size, Industry, and Growth Trajectory: Telstra is Australia's largest telecommunications company, operating in the telecommunications industry. The company has been focusing on growth through investments in advanced technologies, such as 5G and AI, and expanding its infrastructure to meet increasing data demands. Recent strategic plans, including the T25 initiative, aim to streamline operations and enhance earnings growth.
-
-Primary Use Cases for Data: Telstra utilizes data for various purposes, including business intelligence to inform strategic decisions, real-time analytics to monitor network performance and customer usage patterns, and machine learning to enhance customer service through AI-driven chatbots and to optimize network management.
-
-Recent News or Announcements:
-Technological Investments: In January 2025, Telstra entered into a $700 million joint venture with Accenture to accelerate the deployment of artificial intelligence across its operations. This initiative is designed to simplify processes, enhance data utilization, and improve customer experiences by embedding AI into various facets of the business. 
-
-To meet the growing demand for data, particularly driven by AI applications, Telstra has tripled its undersea cable capacity. This upgrade is part of the company's strategy to bolster its international network infrastructure, ensuring robust and reliable connectivity.
- 
-Operational Challenges: In January 2025, North Stradbroke Island experienced a significant Telstra mobile network outage due to a power cut at Telstra’s island site. The disruption affected over 20 businesses, hindering operations like EFTPOS transactions and bookings. Services were restored after a Telstra technician addressed the issue, though the repair process was prolonged due to the island's limited accessibility. 
-
-Growth, Changes, or Challenges: In August 2024, Telstra announced plans to reduce its workforce by up to 2,800 positions as part of cost-cutting measures aimed at saving approximately A$350 million. This move is part of the company's broader strategy to streamline operations and invest in future technologies.  
-
-New Products or Market Entries: Telstra has been actively expanding its services in regional Australia. In collaboration with SpaceX's Starlink, the company is working to provide satellite connectivity to enhance coverage in remote areas. This partnership aims to offer improved broadband services and direct-to-handset satellite connectivity, allowing customers to send and receive SMS text messages in areas beyond traditional network reach. 
-
-Digital Transformation Initiatives: Telstra is investing in AI and digital infrastructure to prepare for future technological demands. The company is focusing on building advanced telecom infrastructure, including a high-capacity fiber network, to support increased data usage and emerging technologies like 6G. 
-
-Adoption of Innovative or Cloud-Based Solutions: Telstra has a history of embracing innovative solutions, such as developing AI-driven chatbots like "Codi" to enhance customer service and internal operations. The company has also partnered with Microsoft to integrate advanced AI capabilities into its services. 
-
-External Triggers Suggesting a Need for Snowflake: Telstra's ongoing digital transformation, focus on AI, and the need to manage large volumes of data across various platforms indicate a potential requirement for robust data warehousing and analytics solutions like Snowflake.
-
-Technologies they use:
-Relevant Technologies or Solutions: Telstra employs a range of technologies, including AI for customer service, advanced analytics for network optimization, and cloud services for scalable infrastructure. The company has also been exploring satellite technology to enhance coverage in remote areas. 
-
-Cloud Infrastructure Usage: Telstra has partnered with major cloud providers, such as Microsoft and AWS, to integrate cloud-based solutions into its services. 
-
-Critical Integrations: Integrations with AI platforms, cloud services, and advanced analytics tools are critical for Telstra to enhance its service offerings and operational efficiency. Collaborations with companies like Microsoft and SpaceX highlight Telstra's commitment to integrating cutting-edge technologies. 
-
-Data Volume Management and Analytics Challenges: Managing the growing volume of data from its extensive customer base and network operations is a significant focus for Telstra. The company employs advanced analytics and AI to derive actionable insights and improve service delivery. 
-
-Primary Competitors:
-Optus: As Australia's second-largest telecommunications provider, Optus offers a comprehensive range of services, including mobile, fixed-line, broadband, and television. The company is a wholly owned subsidiary of Singaporean telecommunications giant Singtel.
-
-TPG Telecom: Formed through the merger of TPG and Vodafone Hutchison Australia in 2020, TPG Telecom operates several brands, including Vodafone, TPG, iiNet, and Internode. The company provides mobile and fixed broadband services across Australia.
-
-Aussie Broadband: An emerging player in the market, Aussie Broadband focuses on high-quality internet services and has been gaining market share with its emphasis on customer service and network performance.
-
-Vocus: Specializing in fiber and network solutions, Vocus provides telecommunications and network services to both retail and enterprise customers, positioning itself as a significant competitor in the business sector.
-""".strip()),
 ("marketing_message", """
 Hi [Name],
 
@@ -322,7 +205,6 @@ def query_cortex_search_service(query):
     service_metadata = st.session_state.service_metadata
     search_col = service_metadata.get("linkedin_service")
 
-    print(results)
     return results, search_col
 
 
@@ -358,49 +240,37 @@ def query_stories_cortex_search_service(query, filters, input_limit):
     return results, search_col
 
 def get_general_chat_history():
-    """
-    Retrieve the chat history from the session state limited to the number of messages specified
-    by the user in the sidebar options.
-
-    Returns:
-        list: The list of chat messages from the session state.
-    """
     start_index = max(
         0, len(st.session_state.general_messages) - st.session_state.num_chat_messages
     )
     return st.session_state.general_messages[start_index : len(st.session_state.general_messages) - 1]
 
-
 def make_chat_history_summary(chat_history, question):
-    prompt = f"""
-        [INST]
-        Based on the chat history below and the question, generate a query that extend the question
-        with the chat history provided. The query should be in natural language.
-        Answer with only the query. Do not add any explanation.
-        
-        <chat_history>
-        {chat_history}
-        </chat_history>
-        <question>
-        {question}
-        </question>
-        [/INST]
-    """
 
-    summary = complete_function(prompt)
+    print(chat_history)
+    if chat_history: 
+        with open("prompts/query_system_prompt.txt", "r") as file:
+            system_prompt = file.read()
+
+        user_prompt = f"""
+    [INST]
+    <chat_history>
+    {chat_history}
+    </chat_history>
+    <question>
+    {question}
+    </question>
+    [/INST]
+        """
+        prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+        summary = complete_function(prompt)
+        st.session_state.general_chat_history = summary
+    else:
+        summary = ""
     return summary
 
 @st.cache_data
 def text_download(text):
-    """
-    Saves the given text to a BytesIO object for download.
-
-    Args:
-        text (str): The input text to save.
-
-    Returns:
-        BytesIO: A BytesIO object containing the text data.
-    """
     if not text:
         return None
 

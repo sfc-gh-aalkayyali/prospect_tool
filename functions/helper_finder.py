@@ -7,15 +7,9 @@ import streamlit.components.v1 as components
 import re
 
 def init_config_options_finder():
-    """
-    Initialize the configuration options in the Streamlit sidebar. Allow the user to select
-    a cortex search service, clear the conversation, toggle debug mode, and toggle the use of
-    chat history. Also provide advanced options to select a model, the number of context chunks,
-    and the number of chat messages to use in the chat history.
-    """
     st.session_state.selected_cortex_search_service = "LINKEDIN_SERVICE"
 
-    with st.sidebar.expander("LLM Advanced Options"):
+    with st.sidebar.expander("LLM Options"):
         st.toggle("Use chat history", key="use_chat_history", value=True)
         st.selectbox(
             "Select LLM Model",
@@ -55,7 +49,7 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
 
         if st.session_state.general_chat_history != "":
             with st.container(height=150):
-                st.write("Chat history summary")
+                st.write("Chat History")
                 st.markdown(st.session_state.general_chat_history)
 
 def table_complete_function(prompt):
@@ -162,11 +156,12 @@ def read_docx(file):
     doc = Document(file)
     return "\n".join([para.text for para in doc.paragraphs])
 
-def create_prompt_general(user_question):
+def create_table_prompt(user_question):
     if st.session_state.use_chat_history:
+        history = make_chat_history_summary(get_general_chat_history(), user_question)
         chat_history = f"""
 <chat_history>
-{get_general_chat_history()}
+{history}
 </chat_history>
 """
     else:
@@ -178,15 +173,52 @@ def create_prompt_general(user_question):
     for i, r in enumerate(results, start=1):
         context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
         st.session_state.general_people.append(r[search_column])
-    chat_history = ""
 
-    system_prompt = st.session_state.general_system_prompt
+    with open("prompts/table_system_prompt.txt", "r") as file:
+        system_prompt = file.read()
+
     user_prompt = f"""
 [INST]
 {chat_history}
-<context>
+<profile>
 {context_str}
-</context>
+</profile>
+<question>
+{user_question}
+</question>
+[/INST]
+""".strip()
+    
+    prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+    return prompt
+
+def create_query_prompt(user_question):
+    if st.session_state.use_chat_history:
+        history = make_chat_history_summary(get_general_chat_history(), user_question)
+        chat_history = f"""
+<chat_history>
+{history}
+</chat_history>
+"""
+    else:
+        chat_history = ""
+
+    if st.session_state.general_people:
+        context = f"""
+<profile>
+{st.session_state.general_people}
+</profile>
+"""
+    else:
+        context = ""
+
+    with open("prompts/query_system_prompt.txt", "r") as file:
+        system_prompt = file.read()
+
+    user_prompt = f"""
+[INST]
+{chat_history}
+{context}
 <question>
 {user_question}
 </question>

@@ -4,9 +4,6 @@ from functions.helper_session import *
 import pandas as pd
 from functions.helper_session import *
 
-## State Session Variables
-
-
 html_code = f"""
 <div id="scroll-to-me" style='background: transparent; height:1px;'></div>
 <script>
@@ -21,87 +18,81 @@ icons = {"assistant": "🕵️‍♂️", "user": "👤"}
 
 init_session_state()
 init_service_metadata()
+
+search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles")
+
+if search_profile_toggle:
+    classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+    classifications = classifications.dropna().loc[classifications['CLASSIFICATION'].str.strip() != '']
+
+    company_name = session.sql('SELECT DISTINCT COMPANYNAME FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+    company_name = company_name.dropna().loc[company_name['COMPANYNAME'].str.strip() != '']
+
+    industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+    industries = industries.dropna().loc[industries['INDUSTRY'].str.strip() != '']
+
+    locations = session.sql('SELECT DISTINCT LOCATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+    locations = locations.dropna().loc[locations['LOCATION'].str.strip() != '']
+
+    connection_degrees = session.sql('SELECT DISTINCT CONNECTIONDEGREE FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
+    connection_degrees = connection_degrees.dropna().loc[connection_degrees['CONNECTIONDEGREE'].astype(str).str.strip() != '']
+
+    with st.sidebar.expander("Cortex Search Options", expanded=True):
+
+        st.write("Filter Results")
+
+        st.multiselect(
+            "Location",
+            locations,
+            key="location_filter"
+        )
+
+        st.multiselect(
+            "Industry",
+            industries,
+            key="industry_filter"
+        )
+
+        st.multiselect(
+            "Company Name",
+            company_name,
+            key="company_filter"
+        )
+            
+        st.multiselect(
+            "Classification",
+            classifications,
+            key="classification_filter"
+        )
+
+        st.multiselect(
+            "Connection Degree",
+            connection_degrees,
+            key="connectiondegree_filter"
+        )
+
+        st.markdown("---")
+
+        st.slider(
+        "Select number of documents to retrieve",
+        key="general_num_retrieved_chunks",
+        min_value=1,
+        value=80,
+        max_value=300,
+        help="*Limits the maximum number of documents returned from Cortex Search. A higher number will affect performace.*"
+    )
+
+        if st.session_state.general_people != []:
+            formatted_people = [p.replace("\n", "<br>") for p in st.session_state.general_people]
+            with st.container(height=300):
+                st.write("Cortex Search Documents")
+                for i, person in enumerate(formatted_people, start=1):
+                    st.markdown(f"**Option {i}:**<br>{person}", unsafe_allow_html=True)
+                    st.write("---")
+
 init_config_options_finder()
 
 
-classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
-classifications = classifications.dropna().loc[classifications['CLASSIFICATION'].str.strip() != '']
-
-company_name = session.sql('SELECT DISTINCT COMPANYNAME FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
-company_name = company_name.dropna().loc[company_name['COMPANYNAME'].str.strip() != '']
-
-industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
-industries = industries.dropna().loc[industries['INDUSTRY'].str.strip() != '']
-
-locations = session.sql('SELECT DISTINCT LOCATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
-locations = locations.dropna().loc[locations['LOCATION'].str.strip() != '']
-
-connection_degrees = session.sql('SELECT DISTINCT CONNECTIONDEGREE FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
-connection_degrees = connection_degrees.dropna().loc[connection_degrees['CONNECTIONDEGREE'].astype(str).str.strip() != '']
-
-with st.sidebar.expander("Cortex Search Options", expanded=True):
-
-    st.write("Filter Results")
-
-    st.multiselect(
-        "Location",
-        locations,
-        key="location_filter"
-    )
-
-    st.multiselect(
-        "Industry",
-        industries,
-        key="industry_filter"
-    )
-
-    st.multiselect(
-        "Company Name",
-        company_name,
-        key="company_filter"
-    )
-        
-    st.multiselect(
-        "Classification",
-        classifications,
-        key="classification_filter"
-    )
-
-    st.multiselect(
-        "Connection Degree",
-        connection_degrees,
-        key="connectiondegree_filter"
-    )
-
-    st.markdown("---")
-
-    st.slider(
-    "Select number of documents to retrieve",
-    key="general_num_retrieved_chunks",
-    min_value=1,
-    value=80,
-    max_value=300,
-    help="*Limits the maximum number of documents returned from Cortex Search. A higher number will affect performace.*"
-)
-    
-    # st.text_area("System Prompt:", value=st.session_state.general_system_prompt, height=300, key="updated_general_system_prompt")
-    # if st.button("Submit System Prompt", use_container_width=True, key="general_system", type="primary"):
-    #     st.session_state.general_system_prompt = st.session_state.updated_general_system_prompt
-    #     st.success("Successfully Added Prompt")
-
-    # if st.session_state.general_chat_history != "":
-    #     with st.container(height=150):
-    #         st.write("Chat history summary")
-    #         st.markdown(st.session_state.general_chat_history)
-
-    if st.session_state.general_people != []:
-        formatted_people = [p.replace("\n", "<br>") for p in st.session_state.general_people]
-        with st.container(height=300):
-            st.write("Cortex Search Documents")
-            for i, person in enumerate(formatted_people, start=1):
-                st.markdown(f"**Option {i}:**<br>{person}", unsafe_allow_html=True)
-                st.write("---")
-    
 if st.sidebar.button("Clear Conversation", use_container_width=True, type="secondary"):
     del st.session_state.general_messages
     del st.session_state.general_chat_history
@@ -109,16 +100,26 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
     del st.session_state.general_people
     del st.session_state.selected_prompt
     del st.session_state.general_generated_messages
-    del st.session_state.connectiondegree_filter
-    del st.session_state.classification_filter
-    del st.session_state.company_filter
-    del st.session_state.industry_filter
-    del st.session_state.location_filter
-    st.session_state.connectiondegree_filter = []
-    st.session_state.classification_filter = []
-    st.session_state.company_filter = []
-    st.session_state.industry_filter = []
-    st.session_state.location_filter = []
+    if 'connectiondegree_filter' in st.session_state:
+        del st.session_state.connectiondegree_filter
+        st.session_state.connectiondegree_filter = []
+
+    if 'classification_filter' in st.session_state:
+        del st.session_state.classification_filter
+        st.session_state.classification_filter = []
+    
+    if 'company_filter' in st.session_state:
+        del st.session_state.company_filter
+        st.session_state.company_filter = []
+
+    if 'industry_filter' in st.session_state:
+        del st.session_state.industry_filter
+        st.session_state.industry_filter = []
+
+    if 'location_filter' in st.session_state:
+        del st.session_state.location_filter
+        st.session_state.location_filter = []
+
     st.rerun()
 
 
@@ -140,14 +141,24 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
 
     with st.chat_message("assistant", avatar=icons["assistant"]):
         with st.spinner("Thinking..."):
-            try:
-                generated_response = table_complete_function(create_prompt_general(st.session_state.selected_prompt))
-            except Exception as e:
-                generated_response = "text", f"An error occurred: {e}"
+            if search_profile_toggle:
+                try:
+                    generated_response = table_complete_function(create_table_prompt(st.session_state.selected_prompt))
+                except Exception as e:
+                    generated_response = "text", f"An error occurred: {e}"
 
-            st.session_state.general_messages.append(
-                {"role": "assistant", "content": generated_response}
-            )
+                st.session_state.general_messages.append(
+                    {"role": "assistant", "content": generated_response}
+                )
+            else:
+                try:
+                    generated_response = complete_function(create_query_prompt(st.session_state.selected_prompt))
+                except Exception as e:
+                    generated_response = "text", f"An error occurred: {e}"
+
+                st.session_state.general_messages.append(
+                    {"role": "assistant", "content": generated_response}
+                )     
 
     st.session_state.selected_prompt = None
     st.rerun()
@@ -291,15 +302,16 @@ if question:
 
     with st.chat_message("assistant", avatar=icons["assistant"]):
         with st.spinner("Thinking..."):
-            try:
-                generated_response = table_complete_function(create_prompt_general(question))
-            except Exception as e:
-                generated_response = "text", f"An error occurred: {e}"
+            if search_profile_toggle:
+                try:
+                    generated_response = table_complete_function(create_table_prompt(question))
+                except Exception as e:
+                    generated_response = "text", f"An error occurred: {e}"
+            else:
+                try:
+                    generated_response = complete_function(create_query_prompt(question))
+                except Exception as e:
+                    generated_response = "text", f"An error occurred: {e}"
 
             st.session_state.general_messages.append({"role": "assistant", "content": generated_response})
     st.rerun()
-    
-on = st.toggle("Activate feature")
-
-if on:
-    st.write("Feature activated!")
