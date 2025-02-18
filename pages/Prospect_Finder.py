@@ -19,7 +19,7 @@ icons = {"assistant": "🕵️‍♂️", "user": "👤"}
 init_session_state()
 init_service_metadata()
 
-search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles")
+search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles", help="If toggle is on it will activate Cortex Search to retrieve profiles when you query the chatbot. Conversely, if it is off you can query the LLM without retrieving profiles.")
 
 if search_profile_toggle:
     classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
@@ -99,7 +99,6 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
     del st.session_state.service_metadata
     del st.session_state.general_people
     del st.session_state.selected_prompt
-    del st.session_state.general_generated_messages
     if 'connectiondegree_filter' in st.session_state:
         del st.session_state.connectiondegree_filter
         st.session_state.connectiondegree_filter = []
@@ -123,7 +122,7 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
     st.rerun()
 
 
-st.title(f":mag: General Finder")
+st.title(f":mag: Prospect Finder")
 st.write("")
 
 suggested_prompts = [

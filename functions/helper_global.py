@@ -15,14 +15,9 @@ def init_session_state():
     for key, default_value in [
         ("general_messages", []),
         ("general_chat_history", ""),
-        ("persona_chat_history", ""),
         ("clear_conversation", False),
         ("general_people", []),
-        ("generated_messages", {}),
-        ("general_generated_messages", {}),
-        ("profile_url", ""),
         ("general_profile_selection", []),
-        ("general_filters", []),
         ("selected_prompt", None),
         ("general_profiles", pd.DataFrame()),
         ("customer_stories_docs", []),
@@ -247,7 +242,6 @@ def get_general_chat_history():
 
 def make_chat_history_summary(chat_history, question):
 
-    print(chat_history)
     if chat_history: 
         with open("prompts/chat_history_prompt.txt", "r") as file:
             system_prompt = file.read()

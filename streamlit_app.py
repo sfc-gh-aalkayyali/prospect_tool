@@ -1,3 +1,13 @@
 import streamlit as st
 ###Test
-st.title(f"Welcome.")
+st.set_page_config(page_title="", page_icon="🔍", layout="wide")
+
+pages = {
+    "Navigation Pages": [
+        st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
+        st.Page("pages/Message_Generation.py", title="Message Generation"),
+        st.Page("pages/Information.py", title="Information"),
+    ]
+}
+pg = st.navigation(pages)
+pg.run()
