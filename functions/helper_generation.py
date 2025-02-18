@@ -39,37 +39,31 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
                 st.write("Chat history summary")
                 st.markdown(st.session_state.general_chat_history)
 
-def create_direct_message(profile, flagger):
+def create_direct_message(profile):
     system_prompt = st.session_state.message_system_prompt
 
     # Initialize placeholders for email and story sections
-    email_content = ""
+    message_content = ""
     story_content = ""
     chat_history = ""
 
-    if st.session_state.general_chat_history != "" and flagger == "General Finder":
+    if st.session_state.general_chat_history != "":
             chat_history += f"""
 <chat_history>
 {st.session_state.general_chat_history }
 </chat_history>
 """
-    if st.session_state.persona_chat_history != "" and flagger == "Persona Finder":
-            chat_history += f"""
-<chat_history>
-{st.session_state.persona_chat_history}
-</chat_history>
-"""
 
     # Conditionally build the <email> section
-    if st.session_state.uploaded_emails:
-        email_content = f"""
+    if st.session_state.uploaded_messages:
+        message_content = f"""
 <email>
-{st.session_state.uploaded_emails}
+{st.session_state.uploaded_messages}
 </email>
 """
     else:
         # Default email template if no uploaded emails
-        email_content = """
+        message_content = """
 <email>
 Hi Samuel,
 
@@ -101,7 +95,7 @@ Let me know if this is something you'd be open to discussing. I'll aim to follow
 <profile>
 {profile}
 </profile>
-{email_content}
+{message_content}
 {story_content}
 [/INST]
 Answer:

@@ -17,11 +17,11 @@ init_config_options_generation()
 if st.sidebar.button("Clear Selections", use_container_width=True, type="secondary"):
     del st.session_state.service_metadata
     del st.session_state.generated_messages
-    del st.session_state.uploaded_emails
+    del st.session_state.uploaded_messages
     del st.session_state.customer_stories_docs
     del st.session_state.selected_customer_stories_docs
     st.session_state.customer_stories_docs = []
-    st.session_state.uploaded_emails = ""
+    st.session_state.uploaded_messages = ""
     st.session_state.general_profile_selection = []
     st.session_state.selected_customer_stories_docs = []
     st.rerun()
@@ -57,13 +57,13 @@ if not people_df.empty:
 
             with col3:
                 st.multiselect(
-                "Industry",
+                "Select an Industry",
                 ["Telecommunication"],
                 help="These options will filter the customer stories based on Industry.",
                 key="customer_stories_filter"
             )
             with col4:
-                st.text_input(label="Enter a keyword to search on:", placeholder="Type here...", key="customer_stories_search", help="Search any keyterm to identify companies/industries you are looking for.",)
+                st.text_input(label="Enter a keyword to search customer success stories:", placeholder="Type here...", key="customer_stories_search", help="Search any key word to identify companies/industries you are looking for.",)
 
             st.slider(label="Limit stories retreived:",min_value=1, max_value=8, value=3, key="customer_stories_limit")
 
@@ -84,7 +84,7 @@ if not people_df.empty:
             
             st.write("---")
             st.markdown("### Message Template")
-            preselected_emails = st.selectbox("Message Template", ("Marketing Message", "ESG Message", "Splunk Message"), index=None)
+            preselected_emails = st.selectbox("Select a Message Template", ("Marketing Message", "ESG Message", "Splunk Message"), index=None)
             if preselected_emails == None:
                 st.session_state.email_placeholder = ""
             elif preselected_emails == "Marketing Message":
@@ -97,17 +97,17 @@ if not people_df.empty:
                 # uploaded_files = st.session_state.splunk_message
                 st.session_state.email_placeholder = st.session_state.splunk_message
 
-            uploaded_files = st.text_area(label="Sample Email", value=st.session_state.email_placeholder, placeholder="Type sample email here...", help="Type in a sample email to pass into the LLM to follow the same structure.", height=250)
+            uploaded_files = st.text_area(label="Sample Message",label_visibility="collapsed", key="uploaded_messages", value=st.session_state.email_placeholder, placeholder="Type sample email here...", help="Type in a sample email to pass into the LLM to follow the same structure.", height=250)
             
-            if st.button(label="Add Sample Email", use_container_width=True):
-                st.session_state.uploaded_emails = uploaded_files
-                st.success("Successfully Added Email")
+            # if st.button(label="Add Sample Email", use_container_width=True):
+            #     st.session_state.uploaded_messages = uploaded_files
+            #     st.success("Successfully Added Email")
 
             # ✅ "Generate All Messages" Button
             if st.button("Generate All Messages", use_container_width=True, type="primary"):
                 with st.spinner("Generating messages..."):
                     generated_messages = {
-                        f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict(), option))
+                        f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
                         for _, row in selected_profiles_df.iterrows()
                     }
                     st.session_state.generated_messages = generated_messages
