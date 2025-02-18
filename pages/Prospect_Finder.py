@@ -37,9 +37,7 @@ if search_profile_toggle:
     connection_degrees = session.sql('SELECT DISTINCT CONNECTIONDEGREE FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
     connection_degrees = connection_degrees.dropna().loc[connection_degrees['CONNECTIONDEGREE'].astype(str).str.strip() != '']
 
-    with st.sidebar.expander("Cortex Search Options", expanded=True):
-
-        st.write("Filter Results")
+    with st.sidebar.expander("Cortex Search Filters", expanded=True):
 
         st.multiselect(
             "Location",
@@ -282,6 +280,7 @@ for index, message in enumerate(st.session_state.general_messages):
                 people_df = filtered_df.drop_duplicates(subset=['Full Name'])
                 st.session_state.general_profile_selection = people_df['Full Name'].tolist()
                 st.success(f"Successfully Added Profiles from Table {general_table_index} to Message Generator")
+                st.switch_page("pages/Message_Generation.py")
 
             general_table_index += 1
         else:

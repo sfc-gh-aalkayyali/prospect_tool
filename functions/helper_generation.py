@@ -6,19 +6,11 @@ def init_config_options_generation():
 
     with st.sidebar.expander("LLM Advanced Options"):
         st.toggle("Use chat history", key="use_chat_history", value=True)
-        st.selectbox(
-            "Select LLM Model",
-            ("llama3.1-70b", "mistral-large2"),
-            key="selected_model", help="*It is recommended to choose llama3.1-70*"
-        )
-        st.slider(
-        "Select number of messages to use in chat history",
-        value=5,
-        key="num_chat_messages",
-        min_value=1,
-        max_value=10,
-        help="*Limits the number of chats for the LLM to consider as context during a conversation.*"
-    )
+        # st.selectbox(
+        #     "Select LLM Model",
+        #     ("llama3.1-70b", "mistral-large2"),
+        #     key="selected_model", help="*It is recommended to choose llama3.1-70*"
+        # )
         st.slider(
             "Temperature/Creativity",
             value=0.5,

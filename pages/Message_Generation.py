@@ -5,13 +5,14 @@ import pandas as pd
 
 init_session_state()
 init_service_metadata()
-init_config_options_generation()
 
-with st.sidebar.expander("Message Generation Advanced Options"):
-    st.text_area("System Prompt:", value=st.session_state.message_system_prompt, height=300, key="updated_message_system_prompt")
-    if st.button("Submit System Prompt", use_container_width=True, key="message_system", type="primary"):
-        st.session_state.message_system_prompt = st.session_state.updated_message_system_prompt
-        st.success("Successfully Added Prompt")
+# with st.sidebar.expander("Message Generation Options"):
+#     st.text_area("System Prompt:", value=st.session_state.message_system_prompt, height=300, key="updated_message_system_prompt")
+#     if st.button("Submit System Prompt", use_container_width=True, key="message_system", type="primary"):
+#         st.session_state.message_system_prompt = st.session_state.updated_message_system_prompt
+#         st.success("Successfully Added Prompt")
+
+init_config_options_generation()
 
 if st.sidebar.button("Clear Selections", use_container_width=True, type="secondary"):
     del st.session_state.service_metadata
@@ -21,7 +22,6 @@ if st.sidebar.button("Clear Selections", use_container_width=True, type="seconda
     del st.session_state.selected_customer_stories_docs
     st.session_state.customer_stories_docs = []
     st.session_state.uploaded_emails = ""
-    st.session_state.persona_profile_selection = []
     st.session_state.general_profile_selection = []
     st.session_state.selected_customer_stories_docs = []
     st.rerun()
@@ -29,46 +29,20 @@ if st.sidebar.button("Clear Selections", use_container_width=True, type="seconda
 st.title(":speech_balloon: Message Generation")
 st.write("")
 
-col1, col2 = st.columns(2)
 
-with col1: 
-    option = st.selectbox(
-        "Select retrieved profiles",
-        ["General Finder", "Persona Finder"]
-    )
-
-    if option == "General Finder":
-        people_df = st.session_state.general_profiles
-    elif option == "Persona Finder":
-        people_df = st.session_state.persona_profiles
-    else:
-        people_df = pd.DataFrame()
+people_df = st.session_state.general_profiles
 
 if not people_df.empty:  
-    with col2:
-        people_df['Full Name'] = people_df['First Name'] + " " + people_df['Last Name']
-        people_df = people_df.drop_duplicates(subset=['Full Name'])
+    st.markdown("### Profile Selection")
+    people_df['Full Name'] = people_df['First Name'] + " " + people_df['Last Name']
+    people_df = people_df.drop_duplicates(subset=['Full Name'])
 
-        if option == "General Finder":
-            selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=(st.session_state.general_profile_selection), key="profile_selection")
-        elif option == "Persona Finder":
-            selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=(st.session_state.persona_profile_selection), key="profile_selection")
+    selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=(st.session_state.general_profile_selection), key="profile_selection")
 
     selected_profiles_df = people_df[people_df['Full Name'].isin(selected_names)]
 
-    if option == "General Finder":
-        if st.session_state.general_chat_history != "":
-            with st.sidebar.container(height=150):
-                st.write("General Chat history summary")
-                st.markdown(st.session_state.general_chat_history)
-    elif option == "Persona Finder":
-        if st.session_state.persona_chat_history != "":
-            with st.sidebar.container(height=150):
-                st.write("Persona Chat history summary")
-                st.markdown(st.session_state.persona_chat_history)
 
     if not selected_profiles_df.empty:
-        st.markdown("### Selected Profile Details:")
         with st.container(height=300):
             for index, row in selected_profiles_df.iterrows():
                 profile_details = "\n".join([f"{col}: {val}" for col, val in row.items() if col not in ["Full Name"]])
@@ -77,13 +51,13 @@ if not people_df.empty:
         # ✅ Only show this section if at least one profile is selected
         if selected_profiles_df.shape[0] > 0:
             st.markdown("---")
-            st.markdown("### Options for Message Generation:")
+            st.markdown("### Customer Success Stories")
 
             col3, col4 = st.columns(2)
 
             with col3:
                 st.multiselect(
-                "Industry Customer Stories to Retreive",
+                "Industry",
                 ["Telecommunication"],
                 help="These options will filter the customer stories based on Industry.",
                 key="customer_stories_filter"
@@ -98,7 +72,6 @@ if not people_df.empty:
 
             if st.session_state.customer_stories_docs != []:
                 formatted_stories = [p.replace("\n", "<br>") for p in st.session_state.customer_stories_docs]
-                st.write("Customer Stories")
                 with st.container(height=300):
                     for i, story in enumerate(formatted_stories, start=1):
                         with st.container(height=200):
@@ -108,7 +81,10 @@ if not people_df.empty:
                             st.session_state.selected_customer_stories_docs.append(story)
                         elif not selected and story in st.session_state.selected_customer_stories_docs:
                             st.session_state.selected_customer_stories_docs.remove(story)
-            preselected_emails = st.selectbox("Optionally Choose an Email Template", ("Marketing Message", "ESG Message", "Splunk Message"), index=None)
+            
+            st.write("---")
+            st.markdown("### Message Template")
+            preselected_emails = st.selectbox("Message Template", ("Marketing Message", "ESG Message", "Splunk Message"), index=None)
             if preselected_emails == None:
                 st.session_state.email_placeholder = ""
             elif preselected_emails == "Marketing Message":

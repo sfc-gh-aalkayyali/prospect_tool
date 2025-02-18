@@ -11,11 +11,11 @@ def init_config_options_finder():
 
     with st.sidebar.expander("LLM Options"):
         st.toggle("Use chat history", key="use_chat_history", value=True)
-        st.selectbox(
-            "Select LLM Model",
-            ("llama3.1-70b", "mistral-large2"),
-            key="selected_model", help="*It is recommended to choose llama3.1-70*"
-        )
+        # st.selectbox(
+        #     "Select LLM Model",
+        #     ("llama3.1-70b", "mistral-large2"),
+        #     key="selected_model", help="*It is recommended to choose llama3.1-70*"
+        # )
         st.slider(
         "Select number of messages to use in chat history",
         value=5,
@@ -55,7 +55,7 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
 def table_complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
-    response = Complete(model=st.session_state.selected_model, prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
+    response = Complete(model="llama3.1-70b", prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
     response = response.strip()
 
     if response.startswith("No profiles returned.") or response.startswith("An error occurred:"):

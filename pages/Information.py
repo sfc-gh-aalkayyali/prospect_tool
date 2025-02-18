@@ -46,6 +46,28 @@ with st.expander(label="How does Prospect Finder Work?"):
     st.markdown("[Learn more about Cortex Search for RAG](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-search/cortex-search-overview)")
     st.image("https://docs.snowflake.com/en/_images/cortex-search-rag.png", caption="Cortex Search is the retrieval engine that provides the Large Language Model with the context it needs to return answers that are grounded in truth.")
 
+with st.expander(label="How does Message Generation Work?"):
+    st.write("---")
+    st.markdown(
+        "To use Message Generation, you must have searched for profiles from the Prospect Finder page.\n\n"
+        "1. **Profile Selection**\n"
+        "   - Select profiles returned by Prospect Finder.\n"
+        "   - Confirm selections by viewing profile information.\n\n"
+        "2. **Message Generation**\n"
+        "   - Search for relevant customer success stories to add to your message.\n"
+        "   - Select a message template to use.\n"
+        "   - Generate and download your messages.\n"
+    )
+
+with st.expander(label="What does the 'Search Profiles' toggle in Prospect Finder do?"):
+    st.write("---")
+    st.markdown(
+        "1. **Toggle ON - Profile Retrieval**\n"
+        "   - Turn this toggle on to activate the Cortex Search function to retrieve profiles before sending them to the LLM.\n\n"
+
+        "2. **Toggle OFF - Market/Domain Research**\n"
+        "   - Turning this toggle off to query the LLM on information on the profiles retrieved, industry, domain, roles, or responsibilities of the profiles.\n"
+    )
 
 
 

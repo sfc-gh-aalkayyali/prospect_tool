@@ -14,6 +14,7 @@ def init_session_state():
     """Initialize all required session state variables."""
     for key, default_value in [
         ("general_messages", []),
+        ("generated_messages", []),
         ("general_chat_history", ""),
         ("clear_conversation", False),
         ("general_people", []),
@@ -21,6 +22,7 @@ def init_session_state():
         ("selected_prompt", None),
         ("general_profiles", pd.DataFrame()),
         ("customer_stories_docs", []),
+        ("uploaded_emails", ""),
         ("selected_customer_stories_docs", []),
 ("marketing_message", """
 Hi [Name],
@@ -276,6 +278,6 @@ def text_download(text):
 
 def complete_function(prompt):
 
-    response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    response = Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
     return response  
