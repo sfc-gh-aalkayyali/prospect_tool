@@ -26,6 +26,7 @@ def init_session_state():
         ("customer_stories_docs", []),
         ("uploaded_emails", ""),
         ("chat_id", uuid.uuid4()),
+        ("uploaded_messages", ""),
         ("selected_customer_stories_docs", []),
 ("marketing_message", """
 Hi [Name],

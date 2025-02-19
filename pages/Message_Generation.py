@@ -2,15 +2,45 @@ from functions.helper_global import *
 from functions.helper_generation import *
 from functions.helper_session import *
 import pandas as pd
+import streamlit as st
+import uuid
+import os
+
 
 init_session_state()
 init_service_metadata()
+session = create_session()
+
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+if "username" not in st.session_state:
+    st.session_state["username"] = "guest"
+
+username = st.session_state["username"]
 
 # with st.sidebar.expander("Message Generation Options"):
 #     st.text_area("System Prompt:", value=st.session_state.message_system_prompt, height=300, key="updated_message_system_prompt")
 #     if st.button("Submit System Prompt", use_container_width=True, key="message_system", type="primary"):
 #         st.session_state.message_system_prompt = st.session_state.updated_message_system_prompt
 #         st.success("Successfully Added Prompt")
+
+PROMPT_DIR = "prompts"
+
+def load_prompt(file_name):
+    file_path = os.path.join(PROMPT_DIR, file_name)
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read().strip().split("---")
+            return content[0].strip(), content[1].strip() if len(content) > 1 else ""
+    return "", ""
+
+message_types = {
+    "Email": "email_prompt.txt",
+    "Text": "text_prompt.txt",
+    "LinkedIn": "linkedin_prompt.txt",
+    "Call Bullet Points": "call_prompt.txt",
+    "Meeting Bullet Points": "meeting_prompt.txt",
+}
 
 init_config_options_generation()
 
@@ -52,59 +82,83 @@ if not people_df.empty:
         if selected_profiles_df.shape[0] > 0:
             st.markdown("---")
             st.markdown("### Customer Success Stories")
+            col1, col2 = st.columns([0.6, 0.4])
 
-            col3, col4 = st.columns(2)
+            with col1:
+                st.text_input("Search Keyword", placeholder="Enter keyword...", key="customer_stories_search")
+            with col2:
+                st.multiselect("Select Industry", ["Telecommunication"], key="customer_stories_filter")
 
-            with col3:
-                st.multiselect(
-                "Select an Industry",
-                ["Telecommunication"],
-                help="These options will filter the customer stories based on Industry.",
-                key="customer_stories_filter"
-            )
-            with col4:
-                st.text_input(label="Enter a keyword to search customer success stories:", placeholder="Type here...", key="customer_stories_search", help="Search any key word to identify companies/industries you are looking for.",)
+            st.slider("Limit stories retrieved", min_value=1, max_value=8, value=3, key="customer_stories_limit")
 
-            st.slider(label="Limit stories retreived:",min_value=1, max_value=8, value=3, key="customer_stories_limit")
+            def find_stories():
+                if st.session_state.customer_stories_search:
+                    results, search_column = query_stories_cortex_search_service(
+                        st.session_state.customer_stories_search,
+                        st.session_state.customer_stories_filter or None,
+                        st.session_state.customer_stories_limit
+                    )
+                    st.session_state.customer_stories_docs = [r[search_column] for r in results]
 
-            if st.button("Find Customer Stories", use_container_width=True):
+            if st.button("Find Customer Stories"):
                 find_stories()
 
-            if st.session_state.customer_stories_docs != []:
-                formatted_stories = [p.replace("\n", "<br>") for p in st.session_state.customer_stories_docs]
-                with st.container(height=300):
-                    for i, story in enumerate(formatted_stories, start=1):
-                        with st.container(height=200):
-                            selected = st.checkbox(f"Select Customer Story {i}", key=f"story_key{i}")
-                            st.markdown(f"{story}", unsafe_allow_html=True)
-                        if selected and story not in st.session_state.selected_customer_stories_docs:
-                            st.session_state.selected_customer_stories_docs.append(story)
-                        elif not selected and story in st.session_state.selected_customer_stories_docs:
-                            st.session_state.selected_customer_stories_docs.remove(story)
-            
-            st.write("---")
-            st.markdown("### Message Template")
-            preselected_emails = st.selectbox("Select a Message Template", ("Marketing Message", "ESG Message", "Splunk Message"), index=None)
-            if preselected_emails == None:
-                st.session_state.email_placeholder = ""
-            elif preselected_emails == "Marketing Message":
-                # uploaded_files = st.session_state.marketing_message
-                st.session_state.email_placeholder = st.session_state.marketing_message
-            elif preselected_emails == "ESG Message":
-                # uploaded_files = st.session_state.ESG_message
-                st.session_state.email_placeholder = st.session_state.ESG_message
-            elif preselected_emails == "Splunk Message":
-                # uploaded_files = st.session_state.splunk_message
-                st.session_state.email_placeholder = st.session_state.splunk_message
+            if st.session_state.get("customer_stories_docs"):
+                st.markdown("#### 📖 Retrieved Customer Stories")
+                with st.container(height=300):  
+                    for i, story in enumerate(st.session_state.customer_stories_docs, start=1):
+                        st.text_area(f"Story {i}", value=story, height=140)
 
-            uploaded_files = st.text_area(label="Sample Message",label_visibility="collapsed", key="uploaded_messages", value=st.session_state.email_placeholder, placeholder="Type sample email here...", help="Type in a sample email to pass into the LLM to follow the same structure.", height=250)
+            st.markdown("---")
+            st.markdown("### ✏️ Customize & Save Template")
+
+            message_type = st.selectbox("📨 Message Type", list(message_types.keys()))
+
+            default_prompt, default_message = load_prompt(message_types[message_type])
+
+            col1, col2 = st.columns([0.5, 0.5])
+            with col1:
+                user_prompt = st.text_area("📝 Customize Prompt", value=default_prompt, height=250)
+            with col2:
+                message_text = st.text_area("📩 Customize Message", value=default_message, height=250)
+
+            if st.session_state["logged_in"] and username != "guest":
+                if st.button("💾 Save Template", use_container_width=True):
+                    template_id = str(uuid.uuid4())
+                    escaped_prompt, escaped_message = user_prompt.replace("'", "''"), message_text.replace("'", "''")
+
+                    insert_query = f"""
+                        INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
+                        VALUES ('{template_id}', '{username}', '{message_type} Template', '{message_type}', '{escaped_prompt}', '{escaped_message}')
+                    """
+                    try:
+                        session.sql(insert_query).collect()
+                        st.success(f"✅ Template '{message_type} Template' saved!")
+                    except Exception as e:
+                        st.error(f"❌ Error saving template: {e}")
+            else:
+                col1, col2 = st.columns([0.7, 0.3])
+                with col1:
+                    st.info("💡 Log in to save templates.")
+                with col2:
+                    if st.button("🔑 Login"):
+                        st.switch_page("Home.py")
+
+            st.markdown("---")
+
             
             # if st.button(label="Add Sample Email", use_container_width=True):
             #     st.session_state.uploaded_messages = uploaded_files
             #     st.success("Successfully Added Email")
 
-            # ✅ "Generate All Messages" Button
-            if st.button("Generate All Messages", use_container_width=True, type="primary"):
+
+
+
+
+            st.markdown("---")
+            st.markdown("### 🚀 Generate Messages")
+
+            if st.button("Generate Messages", type="primary", use_container_width=True):
                 with st.spinner("Generating messages..."):
                     generated_messages = {
                         f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
@@ -112,39 +166,18 @@ if not people_df.empty:
                     }
                     st.session_state.generated_messages = generated_messages
 
-            # ✅ Display Generated Messages with 📥 Download Icon
-            if st.session_state.generated_messages:
-                st.markdown("### Generated Messages:")
+            if st.session_state.get("generated_messages"):
+                st.markdown("#### 📜 Generated Messages")
                 all_messages = ""
-                
-                for name, message in st.session_state.generated_messages.items():
-                    col1, col2 = st.columns([0.9, 0.1])  # Message box & download icon
+                with st.container(height=300): 
+                    for name, message in st.session_state.generated_messages.items():
+                        col1, col2 = st.columns([0.9, 0.1])
+                        with col1:
+                            st.text_area(f"{name}:", value=message, height=300)
+                        with col2:
+                            st.download_button("📥", data=message, file_name=f"{name.replace(' ', '_')}_message.txt", mime="text/plain", key=f"download_{name}")
 
-                    with col1:
-                        st.text_area(f"Generated Message for {name}:", value=message, height=250, key=f"text_{name}")
+                        all_messages += f"---\n{name}:\n{message}\n\n"
 
-                    with col2:
-                        text_bytes = text_download(message)
-                        st.download_button(
-                            label="📥",  # Download icon only
-                            data=text_bytes,
-                            file_name=f"{name.replace(' ', '_')}_message.txt",
-                            mime="text/plain",
-                            key=f"download_{name}",
-                            help=f"Download {name}'s message"
-                        )
-
-                    all_messages += f"Message for {name}:\n{message}\n\n" + "-" * 60 + "\n\n"
-
-                # ✅ "Download All Messages" Button
-                all_text_bytes = text_download(all_messages)
-                st.download_button(
-                    label="Download All Messages",
-                    data=all_text_bytes,
-                    file_name="all_generated_messages.txt",
-                    mime="text/plain",
-                    use_container_width=True,
-                    type="primary"
-                )
-else:
-    st.info("Please search for profiles before using this feature.")
+                if all_messages:
+                    st.download_button("📥 Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
