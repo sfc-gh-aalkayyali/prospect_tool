@@ -245,14 +245,40 @@ def generate_chat_title(chat_history):
         prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
         return Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=0.0, top_p=0.0), session=session)
     
+import copy
+
 def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summary, session=session):
     if not chat_history:
         return False
     
     try:
         unique_chat_str = str(chat_id)
-        chat_history_str = str(chat_history)
 
+        # Create a deep copy to avoid modifying the original chat_history
+        chat_history_copy = copy.deepcopy(chat_history)
+
+        # If chat_history is a DataFrame, convert it to JSON
+        if isinstance(chat_history_copy, pd.DataFrame):
+            chat_history_duplicate = chat_history_copy.to_json(orient="records")  # Convert DataFrame to JSON string
+
+        # If chat_history is a list of dictionaries, check for embedded DataFrames
+        elif isinstance(chat_history_copy, list):
+            for message in chat_history_copy:
+                if isinstance(message.get("content"), pd.DataFrame):
+                    message["content"] = message["content"].to_json(orient="records")  # Convert DataFrame to JSON string
+
+            chat_history_duplicate = json.dumps(chat_history_copy)
+        
+        elif isinstance(chat_history_copy, dict):
+            chat_history_duplicate = json.dumps(chat_history_copy)
+        
+        elif isinstance(chat_history_copy, str):
+            try:
+                json.loads(chat_history_copy)  # Check if it's already valid JSON
+            except json.JSONDecodeError:
+                chat_history_duplicate = json.dumps({"chat": chat_history_copy})  # Wrap in JSON-compatible format
+        
+        print(chat_history)  # Debugging step
         merge_query = """
         MERGE INTO CHAT_HISTORY AS target
         USING (SELECT ? AS CHAT_DATE, ? AS USERNAME, ? AS CHAT_ID, ? AS CHAT_TITLE, ? AS CHAT_HISTORY, ? AS CHAT_SUMMARY) AS source
@@ -270,7 +296,7 @@ def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summa
         """
 
         # Execute the query safely
-        session.sql(merge_query, params=[chat_date, username, unique_chat_str, chat_title, chat_history_str, chat_summary]).collect()
+        session.sql(merge_query, params=[chat_date, username, unique_chat_str, chat_title, chat_history_duplicate, chat_summary]).collect()
         return True
 
     except Exception as e:

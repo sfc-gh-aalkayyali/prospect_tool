@@ -97,8 +97,6 @@ if search_profile_toggle:
                     st.write("---")
 
 init_config_options_finder()
-
-
 if st.sidebar.button("Clear Conversation", use_container_width=True, type="secondary"):
     del st.session_state.general_messages
     del st.session_state.general_chat_history
@@ -129,10 +127,9 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
 
     st.rerun()
 
-if st.session_state["logged_in"]:
+if st.session_state.logged_in and st.session_state.username != "guest":
     if st.sidebar.button("Save Chat", use_container_width=True, type="primary"):
-        username = "Ahmad_test123"
-        status = save_chat(datetime.now(), username, st.session_state.chat_id, generate_chat_title(st.session_state.general_messages), st.session_state.general_messages, st.session_state.general_chat_history)
+        status = save_chat(datetime.now(), st.session_state.username, st.session_state.chat_id, generate_chat_title(st.session_state.general_messages), st.session_state.general_messages, st.session_state.general_chat_history)
         if status:
             st.sidebar.success("Successfully saved chat")
         else:

@@ -100,11 +100,18 @@ if not people_df.empty:
             if st.button("Find Customer Stories", use_container_width=True):
                 find_stories()
 
-            if st.session_state.get("customer_stories_docs"):
-                st.markdown("#### Retrieved Customer Stories")
-                with st.container(height=300):  
-                    for i, story in enumerate(st.session_state.customer_stories_docs, start=1):
-                        st.text_area(f"Story {i}", value=story, height=140)
+            if st.session_state.customer_stories_docs != []:
+                formatted_stories = [p.replace("\n", "<br>") for p in st.session_state.customer_stories_docs]
+                st.write("Customer Stories")
+                with st.container(height=300):
+                    for i, story in enumerate(formatted_stories, start=1):
+                        with st.container(height=200):
+                            selected = st.checkbox(f"Select Customer Story {i}", key=f"story_key{i}")
+                            st.markdown(f"{story}", unsafe_allow_html=True)
+                        if selected and story not in st.session_state.selected_customer_stories_docs:
+                            st.session_state.selected_customer_stories_docs.append(story)
+                        elif not selected and story in st.session_state.selected_customer_stories_docs:
+                            st.session_state.selected_customer_stories_docs.remove(story)
 
             st.markdown("---")
             st.markdown("### Customize & Save Template")
