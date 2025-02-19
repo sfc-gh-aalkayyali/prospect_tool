@@ -15,7 +15,7 @@ def hash_value(value):
 
 def check_password_requirements(password):
     return (
-        len(password) >= 12 and
+        len(password) >= 6 and
         re.search(r"\d", password) and
         re.search(r"[!@#$%^&*(),.?\":{}|<>]", password)
     )
@@ -101,7 +101,7 @@ if not st.session_state["logged_in"]:
                 elif new_password != confirm_password:
                     st.warning("Passwords do not match.")
                 elif not check_password_requirements(new_password):
-                    st.warning("Password must be at least 12 characters long and contain a number and a symbol.")
+                    st.warning("Password must be at least 6 characters long and contain a number and a symbol.")
                 else:
                     check_user_query = f"SELECT username FROM USERS WHERE username = '{new_username}'"
                     existing_users = session.sql(check_user_query).collect()
@@ -146,7 +146,7 @@ if not st.session_state["logged_in"]:
                             st.session_state["failed_attempts"] = 0
                             st.rerun()
                         else:
-                            st.warning("Password must be at least 12 characters long and contain a number and a symbol.")
+                            st.warning("Password must be at least 6 characters long and contain a number and a symbol.")
                     else:
                         st.error("Incorrect password hint.")
                 else:

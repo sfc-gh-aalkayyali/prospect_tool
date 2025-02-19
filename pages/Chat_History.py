@@ -115,7 +115,7 @@ else:
         # Select a chat to continue
         selected_chat = st.selectbox("Select a chat to continue:", chat_history_df["Title"].tolist())
 
-        st.dataframe(chat_history_df.drop(columns=["Messages"]), hide_index=True, use_container_width=True)
+        st.dataframe(chat_history_df.drop(columns=["Messages", "Chat ID"]), hide_index=True, use_container_width=True)
 
         if selected_chat:
             chat_row = chat_history_df[chat_history_df["Title"] == selected_chat].iloc[0]
