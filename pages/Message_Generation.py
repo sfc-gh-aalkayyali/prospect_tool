@@ -194,3 +194,5 @@ if not people_df.empty:
                     st.download_button("📥 Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
 else:
     st.warning("Please search for profiles before using this feature.")    
+    if st.button("Go to Prospect Finder", use_container_width=True):
+        st.switch_page("pages/Prospect_Finder.py")

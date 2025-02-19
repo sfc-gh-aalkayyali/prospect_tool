@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 from functions.helper_session import create_session
+from functions.helper_global import *
 
 st.title(":hourglass_flowing_sand: Chat History")
 
@@ -70,16 +71,41 @@ def load_chat(username, session):
     except Exception as e:
         return pd.DataFrame()
 
-# Retrieve user's chat history
-username = st.session_state.get("username", "guest")
+
+init_session_state()
+if st.session_state.username != "guest":
+    cols = st.columns([85,15])
+    with cols[1]:
+        if st.button("Logout", use_container_width=True):
+            logout()
+
+username = st.session_state.username
+
 if username == "guest":
     st.warning("You must be logged in to view your chat history.")
+    if st.button("Login or Register", use_container_width=True):
+        st.session_state["chat_history_show_confirm"] = True
+
+    if st.session_state.chat_history_show_confirm:
+        st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Continue", use_container_width=True):
+                st.session_state.clear()
+                st.rerun()
+        with col2:
+            if st.button("❌ Cancel", use_container_width=True):
+                st.session_state.chat_history_show_confirm = False
+                st.rerun()
     st.stop()
 
-chats = load_chat(username, session)  # Load chat history
+chats = load_chat(username, session)
 
 if chats.empty:
-    st.info("No previous chats found.")
+    st.warning("No previous chats found.")
+    if st.button("Go to Prospect Finder", use_container_width=True):
+        st.switch_page("pages/Prospect_Finder.py")
+
 else:
     # Display chat history without Messages column
     chat_history_df = pd.DataFrame(chats, columns=["Chat ID", "Date", "Title", "Chat Summary", "Messages"])

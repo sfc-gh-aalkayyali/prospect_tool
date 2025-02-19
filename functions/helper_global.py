@@ -32,6 +32,7 @@ def init_session_state():
         ("logged_in", False),
         ("message_generation_show_confirm", False),
         ("template_manager_show_confirm", False),
+        ("chat_history_show_confirm", False),
         ("selected_customer_stories_docs", []),
 ("marketing_message", """
 Hi [Name],
