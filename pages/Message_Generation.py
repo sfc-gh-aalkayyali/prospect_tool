@@ -111,28 +111,35 @@ if not people_df.empty:
 
             message_type = st.selectbox("Message Type", list(message_types.keys()))
 
+            template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, placeholder="Type here...")
+
             default_prompt, default_message = load_prompt(message_types[message_type])
 
             col1, col2 = st.columns([0.5, 0.5])
             with col1:
-                user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250)
+                user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...")
             with col2:
-                message_text = st.text_area("Customize Message", value=default_message, height=250)
+                message_text = st.text_area("Customize Message", value=default_message, height=250, placeholder="Type here...")
 
             if st.session_state["logged_in"] and username != "guest":
                 if st.button("Save Template", use_container_width=True):
-                    template_id = str(uuid.uuid4())
-                    escaped_prompt, escaped_message = user_prompt.replace("'", "''"), message_text.replace("'", "''")
+                    if not template_name.strip():
+                        st.warning("Please enter a name for the template before saving.")
+                    elif not user_prompt.strip() or not message_text.strip():
+                        st.warning("Please enter both a prompt and message before saving.")
+                    else:
+                        template_id = str(uuid.uuid4())
+                        escaped_prompt, escaped_message = user_prompt.replace("'", "''"), message_text.replace("'", "''")
 
-                    insert_query = f"""
-                        INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
-                        VALUES ('{template_id}', '{username}', '{message_type} Template', '{message_type}', '{escaped_prompt}', '{escaped_message}')
-                    """
-                    try:
-                        session.sql(insert_query).collect()
-                        st.success(f"Template '{message_type} Template' saved!")
-                    except Exception as e:
-                        st.error(f"Error saving template: {e}")
+                        insert_query = f"""
+                            INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
+                            VALUES ('{template_id}', '{username}', '{template_name}', '{message_type}', '{escaped_prompt}', '{escaped_message}')
+                        """
+                        try:
+                            session.sql(insert_query).collect()
+                            st.success(f"{message_type} Template '{template_name}' saved!")
+                        except Exception as e:
+                            st.error(f"Error saving template: {e}")
             else:
                 if st.button("Log in or create an account to save templates.", use_container_width=True):
                     st.session_state["message_generation_show_confirm"] = True
@@ -170,7 +177,7 @@ if not people_df.empty:
                     for name, message in st.session_state.generated_messages.items():
                         col1, col2 = st.columns([0.9, 0.1])
                         with col1:
-                            st.text_area(f"{name}:", value=message, height=300)
+                            st.text_area(f"{name}:", value=message, height=300, placeholder="Type here...")
                         with col2:
                             st.download_button("📥", data=message, file_name=f"{name.replace(' ', '_')}_message.txt", mime="text/plain", key=f"download_{name}")
 

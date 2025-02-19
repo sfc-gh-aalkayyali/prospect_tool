@@ -68,31 +68,39 @@ st.markdown("### Create a New Template")
 
 message_type = st.selectbox("Message Type", list(message_types.keys()), key="new_template_type")
 
+template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, placeholder="Type here...")
+
 default_prompt, default_message = load_prompt(message_types[message_type])
 
 col1, col2 = st.columns([0.5, 0.5])
+
 with col1:
-    user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=200, key="new_template_prompt")
+    user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=200, key="new_template_prompt", placeholder="Type here...")
 with col2:
-    message_text = st.text_area("Customize Message", value=default_message, height=200, key="new_template_text")
+    message_text = st.text_area("Customize Message", value=default_message, height=200, key="new_template_text", placeholder="Type here...")
 
 if st.button("Save New Template", use_container_width=True):
-    if not user_prompt.strip() or not message_text.strip():
-        st.warning("⚠️ Please enter both a prompt and message before saving.")
+    if not template_name.strip():
+        st.warning("Please enter a name for the template before saving.")
+    elif not user_prompt.strip() or not message_text.strip():
+        st.warning("Please enter both a prompt and message before saving.")
     else:
         template_id = str(uuid.uuid4())
+        escaped_template_name = template_name.replace("'", "''")
         escaped_prompt = user_prompt.replace("'", "''")
         escaped_message = message_text.replace("'", "''")
 
         insert_query = f"""
             INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
-            VALUES ('{template_id}', '{username}', '{message_type} Template', '{message_type}', '{escaped_prompt}', '{escaped_message}')
+            VALUES ('{template_id}', '{username}', '{escaped_template_name}', '{message_type}', '{escaped_prompt}', '{escaped_message}')
         """
         try:
             session.sql(insert_query).collect()
-            st.success(f"Template '{message_type} Template' saved")
+            st.success(f"Template '{template_name}' saved")
+            st.rerun()
         except Exception as e:
             st.error(f"Error saving template: {e}")
+
 
 
 st.markdown("---")
@@ -106,7 +114,7 @@ try:
     """).collect()
 
     if not saved_templates:
-        st.info("💡 No saved templates found. Create one above.")
+        st.info("No saved templates found. Create one above.")
     else:
         with st.container(height=450):  
             for row in saved_templates:
@@ -115,30 +123,39 @@ try:
                 if f"edit_mode_{template_id}" not in st.session_state:
                     st.session_state[f"edit_mode_{template_id}"] = False
 
-                with st.expander(f"📌 {template_name} ({message_type})", expanded=False):
+                with st.expander(f"{template_name} ({message_type} Template)", expanded=False):
                     if st.session_state[f"edit_mode_{template_id}"]:
-                        st.markdown("#### Edit Template")
-
                         col1, col2 = st.columns([0.5, 0.5])
+
                         with col1:
-                            new_prompt = st.text_area("Edit Prompt", value=user_prompt, key=f"edit_prompt_{template_id}", height=150)
+                            new_template_name = st.text_input(
+                                "Template Name", 
+                                value=template_name, 
+                                key=f"edit_name_{template_id}", 
+                                max_chars=30
+                            )
+                            new_prompt = st.text_area("Edit Prompt", value=user_prompt, key=f"edit_prompt_{template_id}", height=150, placeholder="Type here...")
+
                         with col2:
-                            new_message = st.text_area("Edit Message", value=message_text, key=f"edit_message_{template_id}", height=150)
+                            new_message = st.text_area("Edit Message", value=message_text, key=f"edit_message_{template_id}", height=150, placeholder="Type here...")
 
                         col1, col2 = st.columns(2)
                         with col1:
                             if st.button("Save", key=f"save_{template_id}", use_container_width=True):
+                                escaped_name = new_template_name.replace("'", "''")
                                 escaped_prompt = new_prompt.replace("'", "''")
                                 escaped_message = new_message.replace("'", "''")
 
                                 update_query = f"""
                                     UPDATE TEMPLATES 
-                                    SET USER_PROMPT = '{escaped_prompt}', MESSAGE_TEXT = '{escaped_message}'
+                                    SET NAME_OF_TEMPLATE = '{escaped_name}', 
+                                        USER_PROMPT = '{escaped_prompt}', 
+                                        MESSAGE_TEXT = '{escaped_message}'
                                     WHERE ID = '{template_id}' AND USERNAME = '{username}'
                                 """
                                 try:
                                     session.sql(update_query).collect()
-                                    st.success(f"{template_name} updated")
+                                    st.success(f"{escaped_name} updated")
                                     st.session_state[f"edit_mode_{template_id}"] = False
                                     st.rerun()
                                 except Exception as e:
@@ -154,6 +171,7 @@ try:
                         st.markdown("---")
                         st.markdown(f"<u><b>Message:</b></u><br>{message_text}", unsafe_allow_html=True)
                         col1, col2, col3 = st.columns([0.4, 0.4, 0.2])
+
                         with col1:
                             if st.button("Edit", key=f"edit_{template_id}", use_container_width=True):
                                 st.session_state[f"edit_mode_{template_id}"] = True
