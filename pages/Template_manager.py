@@ -1,25 +1,45 @@
 import streamlit as st
 import uuid
 import os
-from functions.helper_global import create_session
+from functions.helper_global import *
 
+
+init_session_state()
+if st.session_state.logged_in and st.session_state.username != "guest":
+    cols = st.columns([85,15])
+    with cols[1]:
+        if st.button("Logout", use_container_width=True):
+            logout()
 
 st.title("📌 Manage Saved Templates & Prompts")
 
 col1, col2 = st.columns([0.5, 0.5])
 
 with col1:
-    if st.button("⬅ Back to Message Generator", use_container_width=True):
-        st.switch_page("pages/Message_generation.py")
+    if st.button("Go to Message Generator", use_container_width=True):
+        st.switch_page("pages/Message_Generation.py")
 
 with col2:
-    if st.button("🔑 Login", use_container_width=True):
-        st.switch_page("Home.py")
+    if st.button("Login or Register", use_container_width=True):
+        st.session_state["template_manager_show_confirm"] = True
+
+if st.session_state.template_manager_show_confirm:
+    st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Continue", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
+    with col2:
+        if st.button("❌ Cancel", use_container_width=True):
+            st.session_state.template_manager_show_confirm = False
+            st.rerun()
+
 
 session = create_session()
 
 if "logged_in" not in st.session_state or not st.session_state["logged_in"] or st.session_state["username"] == "guest":
-    st.warning("🔒 Please log in to manage or create templates.")
+    st.warning("Please log in or register to manage or create templates.")
     st.stop()
 
 username = st.session_state["username"]
@@ -44,19 +64,19 @@ message_types = {
 
 
 st.markdown("---")
-st.markdown("### 📝 Create a New Template")
+st.markdown("### Create a New Template")
 
-message_type = st.selectbox("📨 Message Type", list(message_types.keys()), key="new_template_type")
+message_type = st.selectbox("Message Type", list(message_types.keys()), key="new_template_type")
 
 default_prompt, default_message = load_prompt(message_types[message_type])
 
 col1, col2 = st.columns([0.5, 0.5])
 with col1:
-    user_prompt = st.text_area("📝 Customize Prompt", value=default_prompt, height=200, key="new_template_prompt")
+    user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=200, key="new_template_prompt")
 with col2:
-    message_text = st.text_area("📩 Customize Message", value=default_message, height=200, key="new_template_text")
+    message_text = st.text_area("Customize Message", value=default_message, height=200, key="new_template_text")
 
-if st.button("💾 Save New Template", use_container_width=True):
+if st.button("Save New Template", use_container_width=True):
     if not user_prompt.strip() or not message_text.strip():
         st.warning("⚠️ Please enter both a prompt and message before saving.")
     else:
@@ -70,13 +90,13 @@ if st.button("💾 Save New Template", use_container_width=True):
         """
         try:
             session.sql(insert_query).collect()
-            st.success(f"✅ Template '{message_type} Template' saved!")
+            st.success(f"Template '{message_type} Template' saved")
         except Exception as e:
-            st.error(f"❌ Error saving template: {e}")
+            st.error(f"Error saving template: {e}")
 
 
 st.markdown("---")
-st.markdown("### 🗂 Your Saved Templates")
+st.markdown("### Your Saved Templates")
 
 try:
     saved_templates = session.sql(f"""
@@ -88,7 +108,7 @@ try:
     if not saved_templates:
         st.info("💡 No saved templates found. Create one above.")
     else:
-        with st.container(height=400):  
+        with st.container(height=450):  
             for row in saved_templates:
                 template_id, template_name, message_type, user_prompt, message_text = row
 
@@ -97,17 +117,17 @@ try:
 
                 with st.expander(f"📌 {template_name} ({message_type})", expanded=False):
                     if st.session_state[f"edit_mode_{template_id}"]:
-                        st.markdown("#### ✏ Edit Template")
+                        st.markdown("#### Edit Template")
 
                         col1, col2 = st.columns([0.5, 0.5])
                         with col1:
-                            new_prompt = st.text_area("🔹 Edit Prompt", value=user_prompt, key=f"edit_prompt_{template_id}", height=150)
+                            new_prompt = st.text_area("Edit Prompt", value=user_prompt, key=f"edit_prompt_{template_id}", height=150)
                         with col2:
-                            new_message = st.text_area("🔹 Edit Message", value=message_text, key=f"edit_message_{template_id}", height=150)
+                            new_message = st.text_area("Edit Message", value=message_text, key=f"edit_message_{template_id}", height=150)
 
                         col1, col2 = st.columns(2)
                         with col1:
-                            if st.button("💾 Save", key=f"save_{template_id}", use_container_width=True):
+                            if st.button("Save", key=f"save_{template_id}", use_container_width=True):
                                 escaped_prompt = new_prompt.replace("'", "''")
                                 escaped_message = new_message.replace("'", "''")
 
@@ -118,38 +138,37 @@ try:
                                 """
                                 try:
                                     session.sql(update_query).collect()
-                                    st.success(f"✅ {template_name} updated!")
+                                    st.success(f"{template_name} updated")
                                     st.session_state[f"edit_mode_{template_id}"] = False
                                     st.rerun()
                                 except Exception as e:
-                                    st.error(f"❌ Error updating template: {e}")
+                                    st.error(f"Error updating template: {e}")
 
                         with col2:
-                            if st.button("❌ Cancel", key=f"cancel_edit_{template_id}", use_container_width=True):
+                            if st.button("Cancel", key=f"cancel_edit_{template_id}", use_container_width=True):
                                 st.session_state[f"edit_mode_{template_id}"] = False
                                 st.rerun()
 
                     else:
-                        st.markdown("#### 📄 Template Preview")
-                        st.markdown(f"**📢 Prompt:**\n> {user_prompt}")
-                        st.markdown(f"**📩 Message:**\n> {message_text}")
-
+                        st.markdown(f"<u><b>Prompt:</b></u><br>{user_prompt}", unsafe_allow_html=True)
+                        st.markdown("---")
+                        st.markdown(f"<u><b>Message:</b></u><br>{message_text}", unsafe_allow_html=True)
                         col1, col2, col3 = st.columns([0.4, 0.4, 0.2])
                         with col1:
-                            if st.button("✏ Edit", key=f"edit_{template_id}", use_container_width=True):
+                            if st.button("Edit", key=f"edit_{template_id}", use_container_width=True):
                                 st.session_state[f"edit_mode_{template_id}"] = True
                                 st.rerun()
 
                         with col2:
-                            if st.button("🗑 Delete", key=f"delete_{template_id}", use_container_width=True):
+                            if st.button("Delete", key=f"delete_{template_id}", use_container_width=True):
                                 delete_query = f"DELETE FROM TEMPLATES WHERE ID = '{template_id}' AND USERNAME = '{username}'"
                                 try:
                                     session.sql(delete_query).collect()
                                     del st.session_state[f"edit_mode_{template_id}"]
-                                    st.success(f"❌ {template_name} deleted!")
+                                    st.success(f"{template_name} deleted")
                                     st.rerun()
                                 except Exception as e:
-                                    st.error(f"❌ Error deleting template: {e}")
+                                    st.error(f"Error deleting template: {e}")
 
 except Exception as e:
-    st.error(f"⚠ Error fetching templates: {e}")
+    st.error(f"Error fetching templates: {e}")

@@ -6,6 +6,13 @@ from datetime import datetime
 import uuid
 from functions.helper_session import *
 
+init_session_state()
+if st.session_state.logged_in and st.session_state.username != "guest":
+    cols = st.columns([85,15])
+    with cols[1]:
+        if st.button("Logout", use_container_width=True):
+            logout()
+            
 html_code = f"""
 <div id="scroll-to-me" style='background: transparent; height:1px;'></div>
 <script>
@@ -18,7 +25,6 @@ if (e) {{
 """
 icons = {"assistant": "🕵️‍♂️", "user": "👤"}
 
-init_session_state()
 init_service_metadata()
 
 search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles", help="If toggle is on it will activate Cortex Search to retrieve profiles when you query the chatbot. Conversely, if it is off you can query the LLM without retrieving profiles.")

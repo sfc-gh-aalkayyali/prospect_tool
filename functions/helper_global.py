@@ -19,7 +19,6 @@ def init_session_state():
         ("general_chat_history", ""),
         ("clear_conversation", False),
         ("general_people", []),
-        ("logged_in", True), ## Make this false
         ("general_profile_selection", []),
         ("selected_prompt", None),
         ("general_profiles", pd.DataFrame()),
@@ -27,6 +26,12 @@ def init_session_state():
         ("uploaded_emails", ""),
         ("chat_id", uuid.uuid4()),
         ("uploaded_messages", ""),
+        ("user_name", "guest"),
+        ("first_login", True),
+        ("failed_attempts", 0),
+        ("logged_in", False),
+        ("message_generation_show_confirm", False),
+        ("template_manager_show_confirm", False),
         ("selected_customer_stories_docs", []),
 ("marketing_message", """
 Hi [Name],
@@ -287,3 +292,7 @@ def complete_function(prompt):
     response = Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
     return response  
+
+def logout():
+    st.session_state.clear()
+    st.rerun()

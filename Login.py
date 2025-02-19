@@ -4,17 +4,10 @@ st.set_page_config(page_title="Snowflake Prospecting Tool", page_icon="🔍", la
 import hashlib
 import re
 from datetime import datetime
-from functions.helper_global import create_session
-session = create_session()
+from functions.helper_global import *
 
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
-if "username" not in st.session_state:
-    st.session_state["username"] = ""
-if "first_login" not in st.session_state:
-    st.session_state["first_login"] = True
-if "failed_attempts" not in st.session_state:
-    st.session_state["failed_attempts"] = 0
+session = create_session()
+init_session_state()
 
 def hash_value(value):
     """Hashes a given value using SHA-256."""
@@ -38,6 +31,7 @@ def get_last_login(username):
     result = session.sql(f"SELECT last_login FROM USERS WHERE username = '{username}'").collect()
     return result[0][0] if result and result[0][0] else "First time login!"
 
+
 if not st.session_state["logged_in"]:
     hide_sidebar_style = """
     <style>
@@ -45,16 +39,14 @@ if not st.session_state["logged_in"]:
     </style>
     """
     st.markdown(hide_sidebar_style, unsafe_allow_html=True)
-
     st.markdown("<h1 style='text-align: center;'>Welcome to the Snowflake Prospecting Tool</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 16px;'>Helping AE's and SDR's send the right message, to the right person, at the right time.</p>", unsafe_allow_html=True)
 
     padding1, content, padding2 = st.columns([25, 50, 25])
-
     with content:
         tabs = st.tabs(["Login", "Register"])
 
-        with tabs[0]:  # Login Tab
+        with tabs[0]:
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
 
@@ -102,6 +94,10 @@ if not st.session_state["logged_in"]:
             if st.button("Create Account", use_container_width=True, type='primary'):
                 if not new_username or not new_password or not confirm_password or not hint:
                     st.warning("All fields are required.")
+                elif new_username.lower() == "guest":
+                    st.warning("Username cannot be 'guest'. Please choose another name.")
+                elif len(new_username) > 10:
+                    st.warning("Username must be a maximum of 10 characters.")
                 elif new_password != confirm_password:
                     st.warning("Passwords do not match.")
                 elif not check_password_requirements(new_password):

@@ -1,4 +1,12 @@
 import streamlit as st
+from functions.helper_global import *
+
+init_session_state()
+if st.session_state.username != "guest":
+    cols = st.columns([85,15])
+    with cols[1]:
+        if st.button("Logout", use_container_width=True):
+            logout()
 
 st.title(":snowboarder: Home")
 
