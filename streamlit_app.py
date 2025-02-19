@@ -1,11 +1,10 @@
 import streamlit as st
+st.set_page_config(page_title="Snowflake Prospecting Tool", page_icon="🔍", layout="wide")
+
 import hashlib
 import re
 from datetime import datetime
 from functions.helper_global import create_session
-
-st.set_page_config(page_title="Snowflake Prospecting Tool", page_icon="🔍", layout="wide")
-
 session = create_session()
 
 if "logged_in" not in st.session_state:
