@@ -1,0 +1,22 @@
+Generate a structured meeting agenda for discussing Snowflake with [recipient's role] at [recipient's company].
+Include key discussion areas, Snowflake’s benefits, and next steps.
+---
+**Meeting Agenda - Snowflake & [Company]**
+
+**1. Introductions**
+- Quick intros & background.
+
+**2. Understanding Your Data Challenges**
+- How are you currently handling data storage, processing, and sharing?
+- What are your biggest pain points in scalability and costs?
+
+**3. Snowflake Overview**
+- Multi-cloud scalability with no maintenance overhead.
+- Cost optimization & performance improvements.
+- Real-time analytics & seamless data collaboration.
+
+**4. Success Stories**
+- How companies in [industry] have transformed their data strategy.
+
+**5. Next Steps**
+- Define action items & schedule follow-up.

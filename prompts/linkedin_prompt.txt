@@ -1,0 +1,10 @@
+Generate a LinkedIn outreach message for [recipient's role] at [recipient's company].
+The tone should be professional but conversational, highlighting Snowflake’s relevance and encouraging engagement.
+---
+Hi [Name], I noticed your role at [Company] and wanted to connect.
+
+At Snowflake, we help companies like yours scale data processing, reduce infrastructure costs, and enable real-time insights.
+
+Curious if you’re exploring cloud-based analytics? Would love to share how Snowflake is helping companies in [industry].
+
+Let’s connect! 

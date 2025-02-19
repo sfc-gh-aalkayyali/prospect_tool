@@ -1,0 +1,14 @@
+Generate key discussion points for a cold call with [recipient's role] at [recipient's company].
+Keep it structured with an introduction, key value props, and a closing question.
+---
+**Introduction**
+- "Hi [Name], this is [Your Name] from Snowflake. I work with teams like yours in [industry] to optimize data infrastructure."
+
+**Key Talking Points**
+- Snowflake allows you to store & analyze all data in one place.
+- No maintenance or infrastructure headaches – fully managed & scalable.
+- Companies like [Company] have reduced costs by [X%] using Snowflake.
+
+**Closing Question**
+- "Is optimizing data analytics a current focus for you?"
+- "Would love to hear how you’re currently managing your data challenges."
