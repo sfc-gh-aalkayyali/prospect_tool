@@ -4,8 +4,6 @@ import json
 from functions.helper_session import create_session
 from functions.helper_global import *
 
-st.title(":hourglass_flowing_sand: Chat History")
-
 # Initialize session
 session = create_session()
 
@@ -81,6 +79,8 @@ if st.session_state.username != "guest":
 
 username = st.session_state.username
 
+st.title(":hourglass_flowing_sand: Chat History")
+
 if username == "guest":
     st.warning("You must be logged in to view your chat history.")
     if st.button("Login or Register", use_container_width=True):
@@ -108,41 +108,42 @@ if chats.empty:
 
 else:
     # Display chat history without Messages column
-    chat_history_df = pd.DataFrame(chats, columns=["Chat ID", "Date", "Title", "Chat Summary", "Messages"])
-    chat_history_df["Date"] = pd.to_datetime(chat_history_df["Date"]).dt.strftime("%Y-%m-%d %H:%M")
+    with st.container(height=350):
+        chat_history_df = pd.DataFrame(chats, columns=["Chat ID", "Date", "Title", "Chat Summary", "Messages"])
+        chat_history_df["Date"] = pd.to_datetime(chat_history_df["Date"]).dt.strftime("%Y-%m-%d %H:%M")
 
-    # Select a chat to continue
-    selected_chat = st.selectbox("Select a chat to continue:", chat_history_df["Title"].tolist())
+        # Select a chat to continue
+        selected_chat = st.selectbox("Select a chat to continue:", chat_history_df["Title"].tolist())
 
-    st.dataframe(chat_history_df.drop(columns=["Messages"]), hide_index=True, use_container_width=True)
+        st.dataframe(chat_history_df.drop(columns=["Messages"]), hide_index=True, use_container_width=True)
 
-    if selected_chat:
-        chat_row = chat_history_df[chat_history_df["Title"] == selected_chat].iloc[0]
+        if selected_chat:
+            chat_row = chat_history_df[chat_history_df["Title"] == selected_chat].iloc[0]
 
-        # 🔹 Wrap messages inside a container for scrollability
-        st.subheader("Chat Messages:")
-        with st.container(height=600):
+    # 🔹 Wrap messages inside a container for scrollability
+    st.subheader("Chat Messages:")
+    with st.container(height=400):
 
-            for message in chat_row["Messages"]:
-                role = message["role"]
-                content = message["content"]
-                icon = icons.get(role, "")
+        for message in chat_row["Messages"]:
+            role = message["role"]
+            content = message["content"]
+            icon = icons.get(role, "")
 
-                with st.chat_message(role, avatar=icon):
-                    # Convert DataFrame objects back into readable DataFrames
-                    if isinstance(content, pd.DataFrame):
-                        st.dataframe(content, hide_index=True, use_container_width=True)
-                    else:
-                        try:
-                            # If content is a JSON-encoded string, try converting it into a DataFrame
-                            content_json = json.loads(content)
-                            if isinstance(content_json, list) and all(isinstance(i, dict) for i in content_json):
-                                content_df = pd.DataFrame(content_json)
-                                st.dataframe(content_df, hide_index=True, use_container_width=True)
-                            else:
-                                st.markdown(f"**{role.capitalize()}:** {content}")  # Normal text
-                        except json.JSONDecodeError:
+            with st.chat_message(role, avatar=icon):
+                # Convert DataFrame objects back into readable DataFrames
+                if isinstance(content, pd.DataFrame):
+                    st.dataframe(content, hide_index=True, use_container_width=True)
+                else:
+                    try:
+                        # If content is a JSON-encoded string, try converting it into a DataFrame
+                        content_json = json.loads(content)
+                        if isinstance(content_json, list) and all(isinstance(i, dict) for i in content_json):
+                            content_df = pd.DataFrame(content_json)
+                            st.dataframe(content_df, hide_index=True, use_container_width=True)
+                        else:
                             st.markdown(f"**{role.capitalize()}:** {content}")  # Normal text
+                    except json.JSONDecodeError:
+                        st.markdown(f"**{role.capitalize()}:** {content}")  # Normal text
 
     # Allow continuing chat
     if st.button("Continue Chat", use_container_width=True, type="primary"):

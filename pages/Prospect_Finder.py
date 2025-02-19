@@ -127,13 +127,9 @@ if st.sidebar.button("Clear Conversation", use_container_width=True, type="secon
 
     st.rerun()
 
-if st.session_state.logged_in and st.session_state.username != "guest":
-    if st.sidebar.button("Save Chat", use_container_width=True, type="primary"):
-        status = save_chat(datetime.now(), st.session_state.username, st.session_state.chat_id, generate_chat_title(st.session_state.general_messages), st.session_state.general_messages, st.session_state.general_chat_history)
-        if status:
-            st.sidebar.success("Successfully saved chat")
-        else:
-            st.sidebar.error("No chat to be saved or an error has occured")
+def save_chat_history():
+    if st.session_state.logged_in and st.session_state.username != "guest":
+        save_chat(datetime.now(), st.session_state.username, st.session_state.chat_id, generate_chat_title(st.session_state.chat_id, st.session_state.username, st.session_state.general_messages), st.session_state.general_messages, st.session_state.general_chat_history)
 
 st.title(f":mag: Prospect Finder")
 st.write("")
@@ -158,19 +154,16 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
                     generated_response = table_complete_function(create_table_prompt(st.session_state.selected_prompt))
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
-
-                st.session_state.general_messages.append(
-                    {"role": "assistant", "content": generated_response}
-                )
             else:
                 try:
                     generated_response = complete_function(create_query_prompt(st.session_state.selected_prompt))
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
 
-                st.session_state.general_messages.append(
-                    {"role": "assistant", "content": generated_response}
-                )     
+            st.session_state.general_messages.append(
+                {"role": "assistant", "content": generated_response}
+            )
+            save_chat_history()     
 
     st.session_state.selected_prompt = None
     st.rerun()
@@ -327,4 +320,5 @@ if question:
                     generated_response = "text", f"An error occurred: {e}"
 
             st.session_state.general_messages.append({"role": "assistant", "content": generated_response})
+            save_chat_history()
     st.rerun()
