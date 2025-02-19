@@ -52,8 +52,7 @@ message_types = {
 }
 
 st.title(":speech_balloon: Message Generation")
-st.write("")
-
+st.markdown("---")
 
 people_df = st.session_state.general_profiles
 
@@ -211,3 +210,5 @@ else:
     st.warning("Please search for profiles before using this feature.")    
     if st.button("Go to Prospect Finder", use_container_width=True):
         st.switch_page("pages/Prospect_Finder.py")
+    if st.button("Go to Chat Manager", use_container_width=True):
+        st.switch_page("pages/Chat_History.py")

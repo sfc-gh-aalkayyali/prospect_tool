@@ -95,6 +95,7 @@ with cols[0]:
                 st.rerun()
 
 st.title(":hourglass_flowing_sand: Chat History")
+st.markdown("---")
 
 if username == "guest":
     st.warning("Please log in or register to view chat history.")
@@ -123,10 +124,11 @@ if chats.empty:
 
 else:
     # Display chat history without Messages column
+    st.subheader("Select Saved Chats")
+
     with st.container(height=350):
         chat_history_df = pd.DataFrame(chats, columns=["Chat ID", "Date", "Title", "Chat Summary", "Messages"])
         chat_history_df["Date"] = pd.to_datetime(chat_history_df["Date"]).dt.strftime("%Y-%m-%d %H:%M")
-
         # Select a chat to continue
         selected_chat = st.selectbox("Select a chat to continue:", chat_history_df["Title"].tolist())
 
@@ -136,7 +138,8 @@ else:
             chat_row = chat_history_df[chat_history_df["Title"] == selected_chat].iloc[0]
 
     # 🔹 Wrap messages inside a container for scrollability
-    st.subheader("Chat Messages:")
+    st.markdown("---")
+    st.subheader("View Saved Chats")
     with st.container(height=400):
 
         for message in chat_row["Messages"]:

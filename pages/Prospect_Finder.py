@@ -147,7 +147,7 @@ def save_chat_history():
         save_chat(datetime.now(), st.session_state.username, st.session_state.chat_id, generate_chat_title(st.session_state.chat_id, st.session_state.username, st.session_state.general_messages), st.session_state.general_messages, st.session_state.general_chat_history)
 
 st.title(f":mag: Prospect Finder")
-st.write("")
+st.markdown("---")
 
 suggested_prompts = [
     "Retrieve 5 Data Engineers who have over 10 years of experience and use Hadoop or similar technologies.",

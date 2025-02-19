@@ -27,6 +27,7 @@ with cols[0]:
                 st.rerun()
 
 st.title("📌 Manage Saved Templates & Prompts")
+st.markdown("---")
 
 # col1, col2 = st.columns([0.5, 0.5])
 
@@ -53,9 +54,6 @@ if "logged_in" not in st.session_state or not st.session_state["logged_in"] or s
                 st.rerun()
     st.stop()
 
-if st.button("Go to Message Generator", use_container_width=True):
-    st.switch_page("pages/Message_Generation.py")
-
 username = st.session_state["username"]
 
 PROMPT_DIR = "prompts"
@@ -77,7 +75,6 @@ message_types = {
 }
 
 
-st.markdown("---")
 st.markdown("### Create a New Template")
 
 message_type = st.selectbox("Message Type", list(message_types.keys()), key="new_template_type")
@@ -204,3 +201,6 @@ try:
 
 except Exception as e:
     st.error(f"Error fetching templates: {e}")
+
+if st.button("Go to Message Generator", use_container_width=True):
+    st.switch_page("pages/Message_Generation.py")
