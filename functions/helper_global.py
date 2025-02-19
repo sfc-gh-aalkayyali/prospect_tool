@@ -26,7 +26,7 @@ def init_session_state():
         ("uploaded_emails", ""),
         ("chat_id", uuid.uuid4()),
         ("uploaded_messages", ""),
-        ("user_name", "guest"),
+        ("username", "guest"),
         ("first_login", True),
         ("failed_attempts", 0),
         ("logged_in", False),
