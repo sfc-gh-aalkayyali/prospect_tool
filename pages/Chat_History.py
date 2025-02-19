@@ -71,18 +71,33 @@ def load_chat(username, session):
 
 
 init_session_state()
-if st.session_state.username != "guest":
-    cols = st.columns([85,15])
-    with cols[1]:
+username = st.session_state.username
+
+cols = st.columns([85,15])
+with cols[1]:
+    if st.session_state.username != "guest":
         if st.button("Logout", use_container_width=True):
             logout()
+    else:
+        if st.button("Login", use_container_width=True):
+            st.session_state.login_show_confirm = True
 
-username = st.session_state.username
+with cols[0]:
+    if st.session_state.login_show_confirm:
+        st.warning("⚠ You will be redirected you to the homepage to login or register and you will lose all chat history. ⚠")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅", use_container_width=True):
+                logout()
+        with col2:
+            if st.button("❌", use_container_width=True):
+                st.session_state.login_show_confirm = False
+                st.rerun()
 
 st.title(":hourglass_flowing_sand: Chat History")
 
 if username == "guest":
-    st.warning("You must be logged in to view your chat history.")
+    st.warning("Please log in or register to view chat history.")
     if st.button("Login or Register", use_container_width=True):
         st.session_state["chat_history_show_confirm"] = True
 

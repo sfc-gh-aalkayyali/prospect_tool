@@ -5,42 +5,56 @@ from functions.helper_global import *
 
 
 init_session_state()
-if st.session_state.logged_in and st.session_state.username != "guest":
-    cols = st.columns([85,15])
-    with cols[1]:
+cols = st.columns([85,15])
+with cols[1]:
+    if st.session_state.username != "guest":
         if st.button("Logout", use_container_width=True):
             logout()
+    else:
+        if st.button("Login", use_container_width=True):
+            st.session_state.login_show_confirm = True
+
+with cols[0]:
+    if st.session_state.login_show_confirm:
+        st.warning("⚠ You will be redirected you to the homepage to login or register and you will lose all chat history. ⚠")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅", use_container_width=True):
+                logout()
+        with col2:
+            if st.button("❌", use_container_width=True):
+                st.session_state.login_show_confirm = False
+                st.rerun()
 
 st.title("📌 Manage Saved Templates & Prompts")
 
-col1, col2 = st.columns([0.5, 0.5])
+# col1, col2 = st.columns([0.5, 0.5])
 
-with col1:
-    if st.button("Go to Message Generator", use_container_width=True):
-        st.switch_page("pages/Message_Generation.py")
-
-with col2:
-    if st.button("Login or Register", use_container_width=True):
-        st.session_state["template_manager_show_confirm"] = True
-
-if st.session_state.template_manager_show_confirm:
-    st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Continue", use_container_width=True):
-            st.session_state.clear()
-            st.rerun()
-    with col2:
-        if st.button("❌ Cancel", use_container_width=True):
-            st.session_state.template_manager_show_confirm = False
-            st.rerun()
+# with col1:
 
 
 session = create_session()
 
 if "logged_in" not in st.session_state or not st.session_state["logged_in"] or st.session_state["username"] == "guest":
     st.warning("Please log in or register to manage or create templates.")
+    if st.button("Login or Register", use_container_width=True):
+        st.session_state["template_manager_show_confirm"] = True
+
+    if st.session_state.template_manager_show_confirm:
+        st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Continue", use_container_width=True):
+                st.session_state.clear()
+                st.rerun()
+        with col2:
+            if st.button("❌ Cancel", use_container_width=True):
+                st.session_state.template_manager_show_confirm = False
+                st.rerun()
     st.stop()
+
+if st.button("Go to Message Generator", use_container_width=True):
+    st.switch_page("pages/Message_Generation.py")
 
 username = st.session_state["username"]
 

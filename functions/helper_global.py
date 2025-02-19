@@ -6,6 +6,7 @@ import streamlit as st
 import json
 import uuid
 import io
+import time
 from snowflake.cortex import Complete, CompleteOptions
 
 session = create_session()
@@ -33,6 +34,7 @@ def init_session_state():
         ("message_generation_show_confirm", False),
         ("template_manager_show_confirm", False),
         ("chat_history_show_confirm", False),
+        ("login_show_confirm", False),
         ("selected_customer_stories_docs", []),
 ("marketing_message", """
 Hi [Name],
