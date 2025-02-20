@@ -72,13 +72,17 @@ if not people_df.empty:
         st.session_state.uploaded_messages = ""
         st.session_state.general_profile_selection = []
         st.session_state.selected_customer_stories_docs = []
+
+        if st.session_state.profile_selection:
+            del st.session_state.profile_selection
+            st.session_state.profile_selection = []
         st.rerun()
     
     st.markdown("### Profile Selection")
     people_df['Full Name'] = people_df['First Name'] + " " + people_df['Last Name']
     people_df = people_df.drop_duplicates(subset=['Full Name'])
 
-    selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=(st.session_state.general_profile_selection), key="profile_selection")
+    selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), key="profile_selection")
 
     selected_profiles_df = people_df[people_df['Full Name'].isin(selected_names)]
 
@@ -97,19 +101,24 @@ if not people_df.empty:
 
             with col1:
                 st.text_input("Search Keyword", placeholder="Enter keyword...", key="customer_stories_search")
+                st.slider("Limit stories retrieved", min_value=1, max_value=20, value=3, key="customer_stories_limit")
             with col2:
-                st.multiselect("Select Industry", ["Telecommunication"], key="customer_stories_filter")
+                industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
+                industries = industries.dropna().loc[industries['INDUSTRY'].astype(str).str.strip() != '']
+                st.multiselect("Select Industry (OPTIONAL)", industries, key="customer_stories_industry")
 
-            st.slider("Limit stories retrieved", min_value=1, max_value=8, value=3, key="customer_stories_limit")
-
+                companies = session.sql('SELECT DISTINCT COMPANY_NAME FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
+                companies = companies.dropna().loc[companies['COMPANY_NAME'].astype(str).str.strip() != '']
+                st.multiselect("Select Company (OPTIONAL)", companies, key="customer_stories_company")
+            
             def find_stories():
-                if st.session_state.customer_stories_search:
+                if st.session_state.customer_stories_search and st.session_state.customer_stories_search.strip() != '':
                     results, search_column = query_stories_cortex_search_service(
-                        st.session_state.customer_stories_search,
-                        st.session_state.customer_stories_filter or None,
-                        st.session_state.customer_stories_limit
+                        st.session_state.customer_stories_search
                     )
                     st.session_state.customer_stories_docs = [r[search_column] for r in results]
+                else:
+                    st.warning("You must enter a keyword search")
 
             if st.button("Find Customer Stories", use_container_width=True):
                 find_stories()
@@ -206,6 +215,8 @@ if not people_df.empty:
 
                 if all_messages:
                     st.download_button("📥 Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
+    else:
+        st.info("Please select one or more profiles from the dropdown.")
 else:
     st.warning("Please search for profiles before using this feature.")    
     if st.button("Go to Prospect Finder", use_container_width=True):

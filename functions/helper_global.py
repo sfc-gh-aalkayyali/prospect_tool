@@ -217,7 +217,7 @@ def query_cortex_search_service(query):
     return results, search_col
 
 
-def query_stories_cortex_search_service(query, filters, input_limit):
+def query_stories_cortex_search_service(query):
     db, schema = session.get_current_database(), session.get_current_schema()
 
     cortex_search_service = (
@@ -226,26 +226,28 @@ def query_stories_cortex_search_service(query, filters, input_limit):
         .cortex_search_services["stories"]
     )
 
-    if filters:
-        filters_dict = {
-            "@or": [{"@eq": {"Industry": f}} for f in filters]
-        }
-            
-        context_documents = cortex_search_service.search(
-            query, columns=[],   filter = filters_dict, limit=input_limit
-        )
-    else:
-        context_documents = cortex_search_service.search(
-            query, columns=[], limit=input_limit
-        )
+    filters = []
+
+
+    if st.session_state.customer_stories_industry:
+        filters.append({
+            "@or": [{"@eq": {"INDUSTRY": cls}} for cls in st.session_state.customer_stories_industry]
+        })
+
+    if st.session_state.customer_stories_company:
+        filters.append({
+            "@or": [{"@eq": {"COMPANY_NAME": cls}} for cls in st.session_state.customer_stories_company]
+        })
+
+    filters_dict = {"@and": filters} if filters else {}
+
+    context_documents = cortex_search_service.search(
+        query, columns=[], filter=filters_dict, limit=st.session_state.customer_stories_limit
+    )
+
     results = context_documents.results
-
     service_metadata = st.session_state.service_metadata
-    # search_col = [s["search_column"] for s in service_metadata
-    #                 if s["name"] == "STORIES"][0]
-    
     search_col = service_metadata.get("stories")
-
     return results, search_col
 
 def get_general_chat_history():
