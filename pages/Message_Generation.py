@@ -46,6 +46,9 @@ message_types = {
     "Meeting Bullet Points": "meeting_prompt.txt",
 }
 
+if "message_type" not in st.session_state:
+    st.session_state.message_type = list(message_types.keys())[0]
+
 st.title(":speech_balloon: Message Generation")
 st.markdown("---")
 
@@ -65,22 +68,36 @@ if not people_df.empty:
         del st.session_state.selected_customer_stories_docs
         st.session_state.customer_stories_docs = []
         st.session_state.uploaded_messages = ""
-        st.session_state.general_profile_selection = []
         st.session_state.selected_customer_stories_docs = []
 
         if st.session_state.profile_selection:
             del st.session_state.profile_selection
             st.session_state.profile_selection = []
+
+        if st.session_state.customer_stories_company:
+            del st.session_state.customer_stories_company
+            st.session_state.customer_stories_company = []
+
+        if st.session_state.customer_stories_industry:
+            del st.session_state.customer_stories_industry
+            st.session_state.customer_stories_industry = []
+
+        if st.session_state.message_type:
+            del st.session_state.message_type
+            st.session_state.message_type = list(message_types.keys())[0]
+
+
         st.rerun()
     
     st.markdown("### Profile Selection")
     people_df['Full Name'] = people_df['First Name'] + " " + people_df['Last Name']
     people_df = people_df.drop_duplicates(subset=['Full Name'])
 
-    selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), key="profile_selection")
+    selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=st.session_state.profile_selection)
+
+    st.session_state.profile_selection = selected_names
 
     selected_profiles_df = people_df[people_df['Full Name'].isin(selected_names)]
-
 
     if not selected_profiles_df.empty:
         with st.container(height=300):
@@ -98,11 +115,14 @@ if not people_df.empty:
         with col2:
             industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
             industries = industries.dropna().loc[industries['INDUSTRY'].astype(str).str.strip() != '']
-            st.multiselect("Select Industry (OPTIONAL)", industries, key="customer_stories_industry")
+            selected_industries = st.multiselect("Select Industry (OPTIONAL)", industries,  default=st.session_state.customer_stories_industry)
+            st.session_state.customer_stories_industry = selected_industries
 
             companies = session.sql('SELECT DISTINCT COMPANY_NAME FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
             companies = companies.dropna().loc[companies['COMPANY_NAME'].astype(str).str.strip() != '']
-            st.multiselect("Select Company (OPTIONAL)", companies, key="customer_stories_company")
+            selected_companies = st.multiselect("Select Company (OPTIONAL)", companies, default=st.session_state.customer_stories_company)
+            st.session_state.customer_stories_company = selected_companies
+
         
         def find_stories():
             if st.session_state.customer_stories_docs != []:
@@ -135,11 +155,16 @@ if not people_df.empty:
         st.markdown("---")
         st.markdown("### Customize & Save Template")
 
-        message_type = st.selectbox("Message Type", list(message_types.keys()))
+        st.session_state.message_type = st.selectbox(
+            "Message Type", 
+            list(message_types.keys()), 
+            index=list(message_types.keys()).index(st.session_state.message_type)  # Keep the previous selection
+        )
 
-        template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {message_type} Template",placeholder="Type here...")
 
-        default_prompt, default_message = load_prompt(message_types[message_type])
+        template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {st.session_state.message_type} Template",placeholder="Type here...")
+
+        default_prompt, default_message = load_prompt(message_types[st.session_state.message_type])
 
         col1, col2 = st.columns([0.5, 0.5])
         with col1:
@@ -164,9 +189,9 @@ if not people_df.empty:
                             INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
                             VALUES (?, ?, ?, ?, ?, ?)
                         """
-                        session.sql(insert_query, params=[template_id, username, template_name, message_type, system_prompt, message_text]).collect()
+                        session.sql(insert_query, params=[template_id, username, template_name, st.session_state.message_type, system_prompt, message_text]).collect()
                         
-                        st.success(f"{message_type} Template '{template_name}' saved!")
+                        st.success(f"{st.session_state.message_type} Template '{template_name}' saved!")
                     
                     except Exception as e:
                         st.error(f"Error saving template: {e}")
