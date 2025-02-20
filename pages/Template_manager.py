@@ -79,16 +79,16 @@ st.markdown("### Create a New Template")
 
 message_type = st.selectbox("Message Type", list(message_types.keys()), key="new_template_type")
 
-template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, placeholder="Type here...")
+template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {message_type} Template", placeholder="Type here...")
 
 default_prompt, default_message = load_prompt(message_types[message_type])
 
 col1, col2 = st.columns([0.5, 0.5])
 
 with col1:
-    user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=200, key="new_template_prompt", placeholder="Type here...")
+    user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=200, key="new_template_prompt", placeholder="Type here...", help="To ensure your output is as expected, follow a similiar template for your prompt.\n\nPlease include explanations of the following tags:\n\n - <profile> and </profile> tags for linkedin profile information.\n\n - <example> and  </example> tags for the sample message/template.\n\n - <story> and </story> tags for the customer success stories.\n\n It is crucial that this information is included in your prompt so that the AI model can understand what is being fed into it.")
 with col2:
-    message_text = st.text_area("Customize Message", value=default_message, height=200, key="new_template_text", placeholder="Type here...")
+    message_text = st.text_area("Customize Message", value=default_message, height=200, key="new_template_text", placeholder="Type here...", help="You can add any example or previous message you have sent to a prospective customer.\n\nThis will allow the AI model to follow a similar structure and writing style to your sample message/template.")
 
 if st.button("Save New Template", use_container_width=True):
     if not template_name.strip():

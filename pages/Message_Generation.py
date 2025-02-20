@@ -143,10 +143,10 @@ if not people_df.empty:
 
         col1, col2 = st.columns([0.5, 0.5])
         with col1:
-            system_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...")
+            system_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...", help="To ensure your output is as expected, follow a similiar template for your prompt.\n\nPlease include explanations of the following tags:\n\n - <profile> and </profile> tags for linkedin profile information.\n\n - <example> and  </example> tags for the sample message/template.\n\n - <story> and </story> tags for the customer success stories.\n\n It is crucial that this information is included in your prompt so that the AI model can understand what is being fed into it.")
             st.session_state.system_prompt = system_prompt
         with col2:
-            message_text = st.text_area("Customize Message", value=default_message, height=250, placeholder="Type here...")
+            message_text = st.text_area("Customize Message", value=default_message, height=250, placeholder="Type here...", help="You can add any example or previous message you have sent to a prospective customer.\n\nThis will allow the AI model to follow a similar structure and writing style to your sample message/template.")
             st.session_state.sample_message = message_text
 
         if st.session_state["logged_in"] and username != "guest":
@@ -197,9 +197,10 @@ if not people_df.empty:
             else:
                 st.warning("Please input a prompt and sample message to generate messages.")
 
-        st.markdown("---")
+            
 
         if st.session_state.get("generated_messages"):
+            st.markdown("---")
             st.markdown("#### Generated Messages")
             all_messages = ""
             with st.container(height=300): 
