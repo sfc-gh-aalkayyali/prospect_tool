@@ -127,7 +127,7 @@ try:
     if not saved_templates:
         st.info("No saved templates found. Create one above.")
     else:
-        with st.container(height=450):  
+        with st.container(height=350):  
             for row in saved_templates:
                 template_id, template_name, message_type, user_prompt, message_text = row
 

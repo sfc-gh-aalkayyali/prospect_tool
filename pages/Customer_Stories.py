@@ -116,44 +116,45 @@ user_stories = session.sql(query).collect()
 if not user_stories:
     st.info("You have no customer stories yet.")
 else:
-    for story in user_stories:
-        story_id = story["STORY_ID"]
-        company_name = story["COMPANY_NAME"]
-        industry = story["INDUSTRY"]
-        story_text = story["TEXT"].replace(f"{company_name} - ", "", 1)  # Remove company name prefix
-        date_added = story["DATE_ADDED"]
+    with st.container(height=350):  
+        for story in user_stories:
+            story_id = story["STORY_ID"]
+            company_name = story["COMPANY_NAME"]
+            industry = story["INDUSTRY"]
+            story_text = story["TEXT"].replace(f"{company_name} - ", "", 1)  # Remove company name prefix
+            date_added = story["DATE_ADDED"]
 
-        with st.expander(f"📖 {company_name} - {industry} ({date_added})"):
-            updated_name = st.text_input("Company Name", company_name, key=f"name_{story_id}")
-            updated_industry = st.text_input("Industry", industry, key=f"industry_{story_id}")
-            updated_story = st.text_area("Success Story", story_text, height=150, key=f"story_{story_id}")
+            with st.expander(f"📖 {company_name} - {industry} ({date_added})"):
+                updated_name = st.text_input("Company Name", company_name, key=f"name_{story_id}")
+                updated_industry = st.text_input("Industry", industry, key=f"industry_{story_id}")
+                updated_story = st.text_area("Success Story", story_text, height=150, key=f"story_{story_id}")
 
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                if st.button("Update", key=f"update_{story_id}", use_container_width=True):
-                    try:
-                        update_query = f"""
-                            UPDATE STORIES 
-                            SET COMPANY_NAME = '{updated_name.replace("'", "''")}', 
-                                INDUSTRY = '{updated_industry.replace("'", "''")}', 
-                                TEXT = '{updated_name} - {updated_story.replace("'", "''")}'
-                            WHERE STORY_ID = '{story_id}'
-                        """
-                        session.sql(update_query).collect()
-                        st.success(f"Updated story for {updated_name}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error updating story: {e}")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    if st.button("Update", key=f"update_{story_id}", use_container_width=True):
+                        try:
+                            update_query = f"""
+                                UPDATE STORIES 
+                                SET COMPANY_NAME = '{updated_name.replace("'", "''")}', 
+                                    INDUSTRY = '{updated_industry.replace("'", "''")}', 
+                                    TEXT = '{updated_name} - {updated_story.replace("'", "''")}'
+                                WHERE STORY_ID = '{story_id}'
+                            """
+                            session.sql(update_query).collect()
+                            st.success(f"Updated story for {updated_name}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error updating story: {e}")
 
-            with col2:
-                if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
-                    try:
-                        delete_query = f"DELETE FROM STORIES WHERE STORY_ID = '{story_id}'"
-                        session.sql(delete_query).collect()
-                        st.success(f"Deleted story for {company_name}")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error deleting story: {e}")
+                with col2:
+                    if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
+                        try:
+                            delete_query = f"DELETE FROM STORIES WHERE STORY_ID = '{story_id}'"
+                            session.sql(delete_query).collect()
+                            st.success(f"Deleted story for {company_name}")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error deleting story: {e}")
 
 st.markdown("---")
 

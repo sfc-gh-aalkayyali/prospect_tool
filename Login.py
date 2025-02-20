@@ -151,7 +151,7 @@ if not st.session_state["logged_in"]:
                         st.error("Incorrect password hint.")
                 else:
                     st.error("Username not found.")
-else:
+elif st.session_state["logged_in"] and st.session_state["username"] != 'guest':
     expand_sidebar_script = """
     <script>
         let sidebar = window.parent.document.querySelector("[data-testid='stSidebar']");
@@ -168,6 +168,25 @@ else:
             st.Page("pages/Template_Manager.py", title="Template Manager"),
             st.Page("pages/Chat_History.py", title="Chat Manager"),
             st.Page("pages/Customer_Stories.py", title="Story Manager")
+        ]
+    }
+    pg = st.navigation(pages)
+    pg.run()
+
+else:
+    expand_sidebar_script = """
+    <script>
+        let sidebar = window.parent.document.querySelector("[data-testid='stSidebar']");
+        if (sidebar) { sidebar.style.display = "block"; }
+    </script>
+    """
+    st.markdown(expand_sidebar_script, unsafe_allow_html=True)
+
+    pages = {
+        "Navigation Pages": [
+            st.Page("pages/Home.py", title="Home"),
+            st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
+            st.Page("pages/Message_Generation.py", title="Message Generation"),
         ]
     }
     pg = st.navigation(pages)

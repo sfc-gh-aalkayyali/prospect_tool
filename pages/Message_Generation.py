@@ -210,5 +210,6 @@ else:
     st.warning("Please search for profiles before using this feature.")    
     if st.button("Go to Prospect Finder", use_container_width=True):
         st.switch_page("pages/Prospect_Finder.py")
-    if st.button("Go to Chat Manager", use_container_width=True):
-        st.switch_page("pages/Chat_History.py")
+    if st.session_state.logged_in and st.session_state.username != 'guest':
+        if st.button("Go to Chat Manager", use_container_width=True):
+            st.switch_page("pages/Chat_History.py")
