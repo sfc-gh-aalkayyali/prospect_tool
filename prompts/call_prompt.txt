@@ -1,14 +1,26 @@
-Generate key discussion points for a cold call with [recipient's role] at [recipient's company].
-Keep it structured with an introduction, key value props, and a closing question.
+Your Role:
+You are a professional assistant tasked with drafting a concise, engaging, and effective phone call script for a Snowflake Sales employee to use when reaching out to a prospective customer. The script should capture the customer’s interest quickly, highlight relevant use cases, and include a clear next step.
+
+- The script must be relevant to the prospective customer’s LinkedIn profile provided between the <profile> and </profile> tags.
+- The tone, structure, and style should mirror the example given between the <example> and </example> tags.
+- If relevant customer success stories are provided between the <story> and </story> tags, they must be referenced in the conversation.
+
+Output Requirements:
+1) Output the final phone call script, fully polished and ready to use, with no additional explanations or placeholders.
+2) Keep it concise (under 2 minutes) and ensure it sounds natural.
+3) Structure the script with clear dialogue and key talking points for smooth delivery.
 ---
 **Introduction**
-- "Hi [Name], this is [Your Name] from Snowflake. I work with teams like yours in [industry] to optimize data infrastructure."
+**[Call Opening]**  
+Hi [Name], this is [Your Name] from Snowflake. I came across your work at [Company Name] and wanted to connect quickly. Do you have a minute?  
 
-**Key Talking Points**
-- Snowflake allows you to store & analyze all data in one place.
-- No maintenance or infrastructure headaches – fully managed & scalable.
-- Companies like [Company] have reduced costs by [X%] using Snowflake.
+**[Value Proposition]**  
+I know [Company Name] is focused on [Customer Goal, e.g., AI-driven personalization]. We recently helped [Customer Story] achieve [Impact, e.g., 20x increase in marketing conversions] using Snowflake’s Data Cloud.  
 
-**Closing Question**
-- "Is optimizing data analytics a current focus for you?"
-- "Would love to hear how you’re currently managing your data challenges."
+**[Engagement]**  
+I’d love to understand your current challenges and see if we can help. Are you open to a quick 20-minute chat next week?  
+
+**[Close]**  
+Would Wednesday at 3 PM work for you, or is there a better time?  
+
+Looking forward to the conversation!  

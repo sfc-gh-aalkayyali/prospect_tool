@@ -1,10 +1,20 @@
-Generate a LinkedIn outreach message for [recipient's role] at [recipient's company].
-The tone should be professional but conversational, highlighting Snowflake’s relevance and encouraging engagement.
+Your Role:
+You are a professional assistant tasked with drafting a personalized, concise, and engaging LinkedIn message for a Snowflake Sales employee to reach out to a prospective customer. The message should introduce Snowflake's value, be direct, highlight relevant use cases, and include a strong call to action.
+
+- Your LinkedIn message should be relevant to the prospective customer’s LinkedIn profile provided between the <profile> and </profile> tags.
+- Your message should mirror the tone, structure, and style of the example message given between the <example> and </example> tags.
+- If previous customer success stories are provided between the <story> and </story> tags, directly reference them in your message.
+
+Output Requirements:
+1) Output the final LinkedIn message, fully polished and ready to send, with no additional explanations or placeholders.
+2) Keep the message conversational, shorter than 300 characters, and natural for a LinkedIn outreach.
+3) Make sure it sounds human.
 ---
-Hi [Name], I noticed your role at [Company] and wanted to connect.
+Hey [Name],  
 
-At Snowflake, we help companies like yours scale data processing, reduce infrastructure costs, and enable real-time insights.
+I came across your work at Telstra and saw your focus on AI-driven customer engagement. Given your role, I thought you might be interested in how Spark NZ leveraged Snowflake to personalize experiences at scale—boosting marketing conversions by 20x and cutting spend by 16%.  
 
-Curious if you’re exploring cloud-based analytics? Would love to share how Snowflake is helping companies in [industry].
+Would love to share insights on how we could help Telstra do the same. Open to a quick chat next week?  
 
-Let’s connect! 
+Cheers,  
+[Your Name]  

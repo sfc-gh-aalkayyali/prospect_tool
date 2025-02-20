@@ -5,11 +5,6 @@ import pandas as pd
 import streamlit as st
 import uuid
 import os
-# with st.sidebar.expander("Message Generation Options"):
-#     st.text_area("System Prompt:", value=st.session_state.message_system_prompt, height=300, key="updated_message_system_prompt")
-#     if st.button("Submit System Prompt", use_container_width=True, key="message_system", type="primary"):
-#         st.session_state.message_system_prompt = st.session_state.updated_message_system_prompt
-#         st.success("Successfully Added Prompt")
 
 init_session_state()
 cols = st.columns([85,15])
@@ -110,6 +105,9 @@ if not people_df.empty:
             st.multiselect("Select Company (OPTIONAL)", companies, key="customer_stories_company")
         
         def find_stories():
+            if st.session_state.customer_stories_docs != []:
+                del st.session_state.customer_stories_docs
+                
             if st.session_state.customer_stories_search and st.session_state.customer_stories_search.strip() != '':
                 results, search_column = query_stories_cortex_search_service(
                     st.session_state.customer_stories_search
@@ -187,13 +185,7 @@ if not people_df.empty:
                         if st.button("❌ Cancel", use_container_width=True):
                             st.session_state.message_generation_show_confirm = False
                             st.rerun()
-            
-            st.markdown("---")
 
-            
-            # if st.button(label="Add Sample Email", use_container_width=True):
-            #     st.session_state.uploaded_messages = uploaded_files
-            #     st.success("Successfully Added Email")
             if st.button("Generate Messages", type="primary", use_container_width=True):
                 if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
                     with st.spinner("Generating messages..."):
@@ -204,6 +196,8 @@ if not people_df.empty:
                         st.session_state.generated_messages = generated_messages
                 else:
                     st.warning("Please input a prompt and sample message to generate messages.")
+
+            st.markdown("---")
 
             if st.session_state.get("generated_messages"):
                 st.markdown("#### Generated Messages")
@@ -219,7 +213,7 @@ if not people_df.empty:
                         all_messages += f"---\n{name}:\n{message}\n\n"
 
                 if all_messages:
-                    st.download_button("📥 Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
+                    st.download_button("Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
     else:
         st.info("Please select one or more profiles from the dropdown.")
 else:

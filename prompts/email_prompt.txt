@@ -6,9 +6,9 @@ You are a professional assistant tasked with drafting a personalised, concise, a
 - If you are given previous customer success stories between the <story> and </story> tags, directly reference the stories in your email.
 
 Output Requirements:
-    1) Output the final email, fully polished and ready to send, with no additional explanations or placeholders.
-    2) Add a subject header
-    3) Make your out sound human.
+1) Output the final email, fully polished and ready to send, with no additional explanations or placeholders.
+2) Add a subject header
+3) Make your out sound human.
 ---
 Subject: How Telstra Can Achieve 20x Marketing Conversions with AI
 
