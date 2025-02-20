@@ -132,88 +132,88 @@ if not people_df.empty:
                     elif not selected and story in st.session_state.selected_customer_stories_docs:
                         st.session_state.selected_customer_stories_docs.remove(story)
 
-            st.markdown("---")
-            st.markdown("### Customize & Save Template")
+        st.markdown("---")
+        st.markdown("### Customize & Save Template")
 
-            message_type = st.selectbox("Message Type", list(message_types.keys()))
+        message_type = st.selectbox("Message Type", list(message_types.keys()))
 
-            template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {message_type} Template",placeholder="Type here...")
+        template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {message_type} Template",placeholder="Type here...")
 
-            default_prompt, default_message = load_prompt(message_types[message_type])
+        default_prompt, default_message = load_prompt(message_types[message_type])
 
-            col1, col2 = st.columns([0.5, 0.5])
-            with col1:
-                system_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...")
-                st.session_state.system_prompt = system_prompt
-            with col2:
-                message_text = st.text_area("Customize Message", value=default_message, height=250, placeholder="Type here...")
-                st.session_state.sample_message = message_text
+        col1, col2 = st.columns([0.5, 0.5])
+        with col1:
+            system_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...")
+            st.session_state.system_prompt = system_prompt
+        with col2:
+            message_text = st.text_area("Customize Message", value=default_message, height=250, placeholder="Type here...")
+            st.session_state.sample_message = message_text
 
-            if st.session_state["logged_in"] and username != "guest":
-                if st.button("Save Template", use_container_width=True):
-                    if not template_name.strip():
-                        st.warning("Please enter a name for the template before saving.")
-                    elif not system_prompt.strip() or not message_text.strip():
-                        st.warning("Please enter both a prompt and message before saving.")
-                    else:
-                        template_id = str(uuid.uuid4())
-
-                        try:
-                            # Use parameterized query to prevent syntax errors
-                            insert_query = """
-                                INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            """
-                            session.sql(insert_query, params=[template_id, username, template_name, message_type, system_prompt, message_text]).collect()
-                            
-                            st.success(f"{message_type} Template '{template_name}' saved!")
-                        
-                        except Exception as e:
-                            st.error(f"Error saving template: {e}")
-            else:
-                if st.button("Log in or create an account to save templates.", use_container_width=True):
-                    st.session_state["message_generation_show_confirm"] = True
-
-                if st.session_state.message_generation_show_confirm:
-                    st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if st.button("✅ Continue", use_container_width=True):
-                            st.session_state.clear()
-                            st.rerun()
-                    with col2:
-                        if st.button("❌ Cancel", use_container_width=True):
-                            st.session_state.message_generation_show_confirm = False
-                            st.rerun()
-
-            if st.button("Generate Messages", type="primary", use_container_width=True):
-                if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
-                    with st.spinner("Generating messages..."):
-                        generated_messages = {
-                            f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
-                            for _, row in selected_profiles_df.iterrows()
-                        }
-                        st.session_state.generated_messages = generated_messages
+        if st.session_state["logged_in"] and username != "guest":
+            if st.button("Save Template", use_container_width=True):
+                if not template_name.strip():
+                    st.warning("Please enter a name for the template before saving.")
+                elif not system_prompt.strip() or not message_text.strip():
+                    st.warning("Please enter both a prompt and message before saving.")
                 else:
-                    st.warning("Please input a prompt and sample message to generate messages.")
+                    template_id = str(uuid.uuid4())
 
-            st.markdown("---")
+                    try:
+                        # Use parameterized query to prevent syntax errors
+                        insert_query = """
+                            INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """
+                        session.sql(insert_query, params=[template_id, username, template_name, message_type, system_prompt, message_text]).collect()
+                        
+                        st.success(f"{message_type} Template '{template_name}' saved!")
+                    
+                    except Exception as e:
+                        st.error(f"Error saving template: {e}")
+        else:
+            if st.button("Log in or create an account to save templates.", use_container_width=True):
+                st.session_state["message_generation_show_confirm"] = True
 
-            if st.session_state.get("generated_messages"):
-                st.markdown("#### Generated Messages")
-                all_messages = ""
-                with st.container(height=300): 
-                    for name, message in st.session_state.generated_messages.items():
-                        col1, col2 = st.columns([0.9, 0.1])
-                        with col1:
-                            st.text_area(f"{name}:", value=message, height=300, placeholder="Type here...")
-                        with col2:
-                            st.download_button("📥", data=message, file_name=f"{name.replace(' ', '_')}_message.txt", mime="text/plain", key=f"download_{name}")
+            if st.session_state.message_generation_show_confirm:
+                st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("✅ Continue", use_container_width=True):
+                        st.session_state.clear()
+                        st.rerun()
+                with col2:
+                    if st.button("❌ Cancel", use_container_width=True):
+                        st.session_state.message_generation_show_confirm = False
+                        st.rerun()
 
-                        all_messages += f"---\n{name}:\n{message}\n\n"
+        if st.button("Generate Messages", type="primary", use_container_width=True):
+            if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
+                with st.spinner("Generating messages..."):
+                    generated_messages = {
+                        f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
+                        for _, row in selected_profiles_df.iterrows()
+                    }
+                    st.session_state.generated_messages = generated_messages
+            else:
+                st.warning("Please input a prompt and sample message to generate messages.")
 
-                if all_messages:
-                    st.download_button("Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
+        st.markdown("---")
+
+        if st.session_state.get("generated_messages"):
+            st.markdown("#### Generated Messages")
+            all_messages = ""
+            with st.container(height=300): 
+                for name, message in st.session_state.generated_messages.items():
+                    col1, col2 = st.columns([0.9, 0.1])
+                    with col1:
+                        st.text_area(f"{name}:", value=message, height=300, placeholder="Type here...")
+                    with col2:
+                        st.download_button("📥", data=message, file_name=f"{name.replace(' ', '_')}_message.txt", mime="text/plain", key=f"download_{name}")
+
+                    all_messages += f"---\n{name}:\n{message}\n\n"
+
+            if all_messages:
+                st.download_button("Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
     else:
         st.info("Please select one or more profiles from the dropdown.")
 else:
