@@ -166,7 +166,8 @@ else:
             st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
             st.Page("pages/Message_Generation.py", title="Message Generation"),
             st.Page("pages/Template_Manager.py", title="Template Manager"),
-            st.Page("pages/Chat_History.py", title="Chat Manager")
+            st.Page("pages/Chat_History.py", title="Chat Manager"),
+            st.Page("pages/Customer_Stories.py", title="Story Manager")
         ]
     }
     pg = st.navigation(pages)

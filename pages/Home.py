@@ -1,6 +1,5 @@
 import streamlit as st
 from functions.helper_global import *
-
 init_session_state()
 
 cols = st.columns([85,15])
