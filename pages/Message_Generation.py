@@ -93,81 +93,83 @@ if not people_df.empty:
                 profile_details = "\n".join([f"{col}: {val}" for col, val in row.items() if col not in ["Full Name"]])
                 st.text_area(f"Profile: {row['Full Name']}", value=profile_details, height=200)
 
-        # ✅ Only show this section if at least one profile is selected
-        if selected_profiles_df.shape[0] > 0:
-            st.markdown("---")
-            st.markdown("### Customer Success Stories")
-            col1, col2 = st.columns([0.6, 0.4])
+        st.markdown("---")
+        st.markdown("### Customer Success Stories (OPTIONAL)")
+        col1, col2 = st.columns([0.6, 0.4])
 
-            with col1:
-                st.text_input("Search Keyword", placeholder="Enter keyword...", key="customer_stories_search")
-                st.slider("Limit stories retrieved", min_value=1, max_value=20, value=3, key="customer_stories_limit")
-            with col2:
-                industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
-                industries = industries.dropna().loc[industries['INDUSTRY'].astype(str).str.strip() != '']
-                st.multiselect("Select Industry (OPTIONAL)", industries, key="customer_stories_industry")
+        with col1:
+            st.text_input("Search Keyword", placeholder="Enter keyword...", key="customer_stories_search")
+            st.slider("Limit stories retrieved", min_value=1, max_value=20, value=3, key="customer_stories_limit")
+        with col2:
+            industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
+            industries = industries.dropna().loc[industries['INDUSTRY'].astype(str).str.strip() != '']
+            st.multiselect("Select Industry (OPTIONAL)", industries, key="customer_stories_industry")
 
-                companies = session.sql('SELECT DISTINCT COMPANY_NAME FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
-                companies = companies.dropna().loc[companies['COMPANY_NAME'].astype(str).str.strip() != '']
-                st.multiselect("Select Company (OPTIONAL)", companies, key="customer_stories_company")
-            
-            def find_stories():
-                if st.session_state.customer_stories_search and st.session_state.customer_stories_search.strip() != '':
-                    results, search_column = query_stories_cortex_search_service(
-                        st.session_state.customer_stories_search
-                    )
-                    st.session_state.customer_stories_docs = [r[search_column] for r in results]
-                else:
-                    st.warning("You must enter a keyword search")
+            companies = session.sql('SELECT DISTINCT COMPANY_NAME FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
+            companies = companies.dropna().loc[companies['COMPANY_NAME'].astype(str).str.strip() != '']
+            st.multiselect("Select Company (OPTIONAL)", companies, key="customer_stories_company")
+        
+        def find_stories():
+            if st.session_state.customer_stories_search and st.session_state.customer_stories_search.strip() != '':
+                results, search_column = query_stories_cortex_search_service(
+                    st.session_state.customer_stories_search
+                )
+                st.session_state.customer_stories_docs = [r[search_column] for r in results]
+            else:
+                st.warning("You must enter a keyword search")
 
-            if st.button("Find Customer Stories", use_container_width=True):
-                find_stories()
+        if st.button("Find Customer Stories", use_container_width=True):
+            find_stories()
 
-            if st.session_state.customer_stories_docs != []:
-                formatted_stories = [p.replace("\n", "<br>") for p in st.session_state.customer_stories_docs]
-                st.write("Customer Stories")
-                with st.container(height=300):
-                    for i, story in enumerate(formatted_stories, start=1):
-                        with st.container(height=200):
-                            selected = st.checkbox(f"Select Customer Story {i}", key=f"story_key{i}")
-                            st.markdown(f"{story}", unsafe_allow_html=True)
-                        if selected and story not in st.session_state.selected_customer_stories_docs:
-                            st.session_state.selected_customer_stories_docs.append(story)
-                        elif not selected and story in st.session_state.selected_customer_stories_docs:
-                            st.session_state.selected_customer_stories_docs.remove(story)
+        if st.session_state.customer_stories_docs != []:
+            formatted_stories = [p.replace("\n", "<br>") for p in st.session_state.customer_stories_docs]
+            st.write("Customer Stories")
+            with st.container(height=300):
+                for i, story in enumerate(formatted_stories, start=1):
+                    with st.container(height=200):
+                        selected = st.checkbox(f"Select Customer Story {i}", key=f"story_key{i}")
+                        st.markdown(f"{story}", unsafe_allow_html=True)
+                    if selected and story not in st.session_state.selected_customer_stories_docs:
+                        st.session_state.selected_customer_stories_docs.append(story)
+                    elif not selected and story in st.session_state.selected_customer_stories_docs:
+                        st.session_state.selected_customer_stories_docs.remove(story)
 
             st.markdown("---")
             st.markdown("### Customize & Save Template")
 
             message_type = st.selectbox("Message Type", list(message_types.keys()))
 
-            template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, placeholder="Type here...")
+            template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {message_type} Template",placeholder="Type here...")
 
             default_prompt, default_message = load_prompt(message_types[message_type])
 
             col1, col2 = st.columns([0.5, 0.5])
             with col1:
-                user_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...")
+                system_prompt = st.text_area("Customize Prompt", value=default_prompt, height=250, placeholder="Type here...")
+                st.session_state.system_prompt = system_prompt
             with col2:
                 message_text = st.text_area("Customize Message", value=default_message, height=250, placeholder="Type here...")
+                st.session_state.sample_message = message_text
 
             if st.session_state["logged_in"] and username != "guest":
                 if st.button("Save Template", use_container_width=True):
                     if not template_name.strip():
                         st.warning("Please enter a name for the template before saving.")
-                    elif not user_prompt.strip() or not message_text.strip():
+                    elif not system_prompt.strip() or not message_text.strip():
                         st.warning("Please enter both a prompt and message before saving.")
                     else:
                         template_id = str(uuid.uuid4())
-                        escaped_prompt, escaped_message = user_prompt.replace("'", "''"), message_text.replace("'", "''")
 
-                        insert_query = f"""
-                            INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
-                            VALUES ('{template_id}', '{username}', '{template_name}', '{message_type}', '{escaped_prompt}', '{escaped_message}')
-                        """
                         try:
-                            session.sql(insert_query).collect()
+                            # Use parameterized query to prevent syntax errors
+                            insert_query = """
+                                INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            """
+                            session.sql(insert_query, params=[template_id, username, template_name, message_type, system_prompt, message_text]).collect()
+                            
                             st.success(f"{message_type} Template '{template_name}' saved!")
+                        
                         except Exception as e:
                             st.error(f"Error saving template: {e}")
             else:
@@ -193,12 +195,15 @@ if not people_df.empty:
             #     st.session_state.uploaded_messages = uploaded_files
             #     st.success("Successfully Added Email")
             if st.button("Generate Messages", type="primary", use_container_width=True):
-                with st.spinner("Generating messages..."):
-                    generated_messages = {
-                        f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
-                        for _, row in selected_profiles_df.iterrows()
-                    }
-                    st.session_state.generated_messages = generated_messages
+                if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
+                    with st.spinner("Generating messages..."):
+                        generated_messages = {
+                            f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
+                            for _, row in selected_profiles_df.iterrows()
+                        }
+                        st.session_state.generated_messages = generated_messages
+                else:
+                    st.warning("Please input a prompt and sample message to generate messages.")
 
             if st.session_state.get("generated_messages"):
                 st.markdown("#### Generated Messages")

@@ -40,46 +40,11 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
                 st.markdown(st.session_state.general_chat_history)
 
 def create_direct_message(profile):
-    system_prompt = st.session_state.message_system_prompt
+    system_prompt = st.session_state.system_prompt
+    sample_message = st.session_state.sample_message
 
-    # Initialize placeholders for email and story sections
-    message_content = ""
     story_content = ""
-    chat_history = ""
 
-    if st.session_state.general_chat_history != "":
-            chat_history += f"""
-<chat_history>
-{st.session_state.general_chat_history }
-</chat_history>
-"""
-
-    # Conditionally build the <email> section
-    if st.session_state.uploaded_messages:
-        message_content = f"""
-<email>
-{st.session_state.uploaded_messages}
-</email>
-"""
-    else:
-        # Default email template if no uploaded emails
-        message_content = """
-<email>
-Hi Samuel,
-
-I recently read your article on ABC News, which prompted me to get in touch.
-
-As you mentioned, rising inflation, energy costs, and market pressures have necessitated cost-cutting measures to maintain competitiveness. This approach is similar to what we're hearing from other telcos that are pursuing sustainable business models and aiming to deliver reasonable returns to shareholders.
-
-We are working with AT&T, One NZ and Spark NZ to name a few on streamlining their operations, reducing costs, and gaining valuable insights from their data. By consolidating data from various sources onto a single platform, telcos can improve efficiency, enhance customer experiences, and drive innovation.
-
-I'd be keen to speak with you about how we might be able to optimize Telstra's data infrastructure, enabling you to make data-driven decisions and unlock new revenue streams. 
-
-Let me know if this is something you'd be open to discussing. I'll aim to follow up with a quick call over the next few days if I don't hear back from you.
-</email>
-"""
-
-    # Conditionally build the <story> section
     if st.session_state.selected_customer_stories_docs:
         for story in st.session_state.selected_customer_stories_docs:
             story_content += f"""
@@ -91,18 +56,19 @@ Let me know if this is something you'd be open to discussing. I'll aim to follow
     # Construct the final prompt
     user_prompt = f"""
 [INST]
-{chat_history}
 <profile>
 {profile}
 </profile>
-{message_content}
+<example>
+{sample_message}
+</example>
 {story_content}
 [/INST]
-Answer:
 """.strip()
 
     # Return the prompt in the expected format
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+
     return prompt
 
 def find_stories():

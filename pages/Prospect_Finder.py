@@ -301,7 +301,7 @@ for index, message in enumerate(st.session_state.general_messages):
             if st.button(f"Send Profiles from Table {general_table_index} to Message Generation", key=f"general_generate_messages_{general_table_index}"):
                 filtered_df['Full Name'] = filtered_df['First Name'] + " " + filtered_df['Last Name']
                 people_df = filtered_df.drop_duplicates(subset=['Full Name'])
-                st.session_state.general_profile_selection = people_df['Full Name'].tolist()
+                st.session_state.profile_selection = people_df['Full Name'].tolist()
                 st.success(f"Successfully Added Profiles from Table {general_table_index} to Message Generator")
                 st.switch_page("pages/Message_Generation.py")
 

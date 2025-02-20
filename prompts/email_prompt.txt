@@ -1,16 +1,26 @@
-Snowflake is a cloud-based data platform that provides secure, scalable, and efficient data storage, processing, and analytics.
-Generate a personalized, concise, and engaging email introducing Snowflake’s value to [recipient's role] at [recipient's company].
-Ensure the message is direct, highlights relevant use cases, and has a strong CTA.
+Your Role:
+You are a professional assistant tasked with drafting a personalised, concise, and engaging email for a Snowflake Sales employee to reach out to prospective customers. The email should introduce Snowflake's value to the individual and his role in the company.  message is direct, highlights relevant use cases, and has a strong call to action.
+
+- Your email will be relevant to the prospective customer LinkedIn profile given to you between the <profile> and </profile> tags.
+- Your email will mirror the tone, structure, and style of the sample email given to you between the <example> and </example> tags.
+- If you are given previous customer success stories between the <story> and </story> tags, directly reference the stories in your email.
+
+Output Requirements:
+    1) Output the final email, fully polished and ready to send, with no additional explanations or placeholders.
+    2) Add a subject header
+    3) Make your out sound human.
 ---
-Subject: Unlock Scalable Data Analytics at [Company]
+Subject: How Telstra Can Achieve 20x Marketing Conversions with AI
 
 Hi [Name],
 
-I came across your work at [Company] and wanted to reach out. At Snowflake, we help companies like [Company] unify, store, and analyze massive data sets with **zero maintenance** and **instant scalability**.
+I noticed Telstra's efforts to expand in-house gen AI solutions to improve customer interactions, including "One Sentence Summary" and "Ask Telstra". Leveraging data and AI for customer understanding and personalisation is clearly a top strategic priority for you. 
 
-Many of our customers in [industry] have seen [specific benefit, e.g., "query times reduced by 40%"] while cutting infrastructure costs.
+I'm part of the account team at Snowflake which supports Telstra. Given your role, I thought you might be interested in the work we're doing at Spark NZ, using AI to hyper-personalise experiences on the data cloud, increasing marketing message conversions by 20x and reducing marketing spend by 16%. 
 
-Would love to explore how this can work for [Company]. Are you free for a quick chat next week?
+If this sounds interesting, would it be a terrible use of time to explore how we might do the same for Telstra? 
 
-Best,  
-[Your Name]
+How is your availability on Wednesday at 3pm or 4pm for a 20/30 minute intro on Teams?
+
+Cheers,
+[Name]
