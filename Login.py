@@ -148,7 +148,7 @@ if not st.session_state["logged_in"]:
                             current_timestamp = datetime.now()
                             
                             # Fix formatting for the template name
-                            formatted_template_name = f"{new_username}'s Default {template_name} Template"
+                            formatted_template_name = f"{new_username}'s {template_name} Template"
 
                             insert_query = """
                                 INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT, DATE_ADDED) 
