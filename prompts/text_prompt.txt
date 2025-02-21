@@ -12,4 +12,4 @@ Output Requirements:
 ---
 Hey [Name], saw your work at [Company Name] on [Customer Focus, e.g., AI-driven personalization]. We helped [Customer Story] increase [Impact, e.g., marketing conversions by 20x] with Snowflake’s Data Cloud.  
 
-Would love to share insights—open to a quick chat next week?  
+Would love to share insights—open to a quick chat next week?

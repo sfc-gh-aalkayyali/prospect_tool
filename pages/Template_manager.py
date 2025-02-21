@@ -2,6 +2,7 @@ import streamlit as st
 import uuid
 import os
 from functions.helper_global import *
+from datetime import datetime
 
 
 init_session_state()
@@ -56,10 +57,8 @@ if "logged_in" not in st.session_state or not st.session_state["logged_in"] or s
 
 username = st.session_state["username"]
 
-PROMPT_DIR = "prompts"
-
 def load_prompt(file_name):
-    file_path = os.path.join(PROMPT_DIR, file_name)
+    file_path = os.path.join("prompts", file_name)
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read().strip().split("---")
@@ -70,16 +69,15 @@ message_types = {
     "Email": "email_prompt.txt",
     "Text": "text_prompt.txt",
     "LinkedIn": "linkedin_prompt.txt",
-    "Call Bullet Points": "call_prompt.txt",
-    "Meeting Bullet Points": "meeting_prompt.txt",
+    "Call": "call_prompt.txt",
+    "Meeting": "meeting_prompt.txt",
 }
-
 
 st.markdown("### Create a New Template")
 
 message_type = st.selectbox("Message Type", list(message_types.keys()), key="new_template_type")
 
-template_name = st.text_input("Template Name", key="new_template_name", max_chars=30, value=f"{username}'s {message_type} Template", placeholder="Type here...")
+template_name = st.text_input("Template Name", key="new_template_name", max_chars=100, value=f"{username}'s {message_type} Template", placeholder="Type here...")
 
 default_prompt, default_message = load_prompt(message_types[message_type])
 
@@ -96,21 +94,57 @@ if st.button("Save New Template", use_container_width=True):
     elif not user_prompt.strip() or not message_text.strip():
         st.warning("Please enter both a prompt and message before saving.")
     else:
-        template_id = str(uuid.uuid4())
-        escaped_template_name = template_name.replace("'", "''")
-        escaped_prompt = user_prompt.replace("'", "''")
-        escaped_message = message_text.replace("'", "''")
+        # escaped_template_name = template_name.replace("'", "''")
+        # escaped_prompt = user_prompt.replace("'", "''")
+        # escaped_message = message_text.replace("'", "''")
 
-        insert_query = f"""
-            INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT)
-            VALUES ('{template_id}', '{username}', '{escaped_template_name}', '{message_type}', '{escaped_prompt}', '{escaped_message}')
+        # Check if a template with the same name already exists
+        query = """
+            SELECT ID FROM TEMPLATES 
+            WHERE NAME_OF_TEMPLATE = ? 
+            AND USERNAME = ?
         """
+
         try:
-            session.sql(insert_query).collect()
-            st.success(f"Template '{template_name}' saved")
-            st.rerun()
+            existing_template = session.sql(query, params=[template_name, username]).collect()
         except Exception as e:
-            st.error(f"Error saving template: {e}")
+            st.error(f"Error retrieving template: {e}")
+
+        if existing_template:
+            # Template exists: Update it
+            template_id = existing_template[0][0]  # Get the existing template ID
+
+            update_query = """
+                UPDATE TEMPLATES 
+                SET USER_PROMPT = ?, 
+                    MESSAGE_TEXT = ?, 
+                    DATE_ADDED = CURRENT_TIMESTAMP
+                WHERE ID = ? AND USERNAME = ?
+            """
+            
+            try:
+                session.sql(update_query, params=[user_prompt, message_text, template_id, username]).collect()
+                st.success(f"Template '{template_name}' updated successfully.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error updating template: {e}")
+
+
+        else:
+            template_id = str(uuid.uuid4())
+            current_timestamp = datetime.now()
+
+            insert_query = """
+                INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT, DATE_ADDED)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """
+
+            try:
+                session.sql(insert_query, params=[template_id, username, template_name, message_type, user_prompt, message_text, current_timestamp]).collect()
+                st.success(f"New template '{template_name}' saved successfully.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error saving template: {e}")
 
 
 

@@ -3,6 +3,7 @@ st.set_page_config(page_title="Snowflake Prospecting Tool", page_icon="🔍", la
 
 import hashlib
 import re
+import os
 from datetime import datetime
 from functions.helper_global import *
 
@@ -31,6 +32,21 @@ def get_last_login(username):
     result = session.sql(f"SELECT last_login FROM USERS WHERE username = '{username}'").collect()
     return result[0][0] if result and result[0][0] else "First time login!"
 
+message_types = {
+    "Email": "email_prompt.txt",
+    "Text": "text_prompt.txt",
+    "LinkedIn": "linkedin_prompt.txt",
+    "Call": "call_prompt.txt",
+    "Meeting": "meeting_prompt.txt",
+}
+
+def load_prompt(file_name):
+    file_path = os.path.join("prompts", file_name)
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read().strip().split("---")
+            return content[0].strip(), content[1].strip() if len(content) > 1 else ""
+    return "", ""
 
 if not st.session_state["logged_in"]:
     hide_sidebar_style = """
@@ -96,8 +112,8 @@ if not st.session_state["logged_in"]:
                     st.warning("All fields are required.")
                 elif new_username.lower() == "guest":
                     st.warning("Username cannot be 'guest'. Please choose another name.")
-                elif len(new_username) > 10:
-                    st.warning("Username must be a maximum of 10 characters.")
+                elif len(new_username) > 25:
+                    st.warning("Username must be a maximum of 25 characters.")
                 elif new_password != confirm_password:
                     st.warning("Passwords do not match.")
                 elif not check_password_requirements(new_password):
@@ -110,16 +126,50 @@ if not st.session_state["logged_in"]:
                         st.error("Username already exists. Please choose another.")
                     else:
                         hashed_password = hash_value(new_password)
-                        hashed_hint = hash_value(hint)  # Hash the hint before storing
-                        insert_query = f"""
+                        hashed_hint = hash_value(hint)
+                        ## insert user
+                        insert_query = """
                             INSERT INTO USERS (username, password, hint, last_login) 
-                            VALUES ('{new_username}', '{hashed_password}', '{hashed_hint}', CURRENT_TIMESTAMP)
+                            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                         """
-                        session.sql(insert_query).collect()
+
+                        try:
+                            session.sql(insert_query, params=[new_username, hashed_password, hashed_hint]).collect()
+                            st.success(f"User '{new_username}' created successfully.")
+                        except Exception as e:
+                            st.error(f"Error creating user '{new_username}': {e}")
+                        
+                        st.toast(f"User for '{new_username}' successfully created!", icon="🎉")
+
+                        ## create default templates
+                        for template_name, prompt in message_types.items():
+                            default_prompt, default_message = load_prompt(prompt)
+                            template_id = str(uuid.uuid4())
+                            current_timestamp = datetime.now()
+                            
+                            # Fix formatting for the template name
+                            formatted_template_name = f"{new_username}'s Default {template_name} Template"
+
+                            insert_query = """
+                                INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT, DATE_ADDED) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """
+
+                            try:
+                                session.sql(insert_query, params=[
+                                    template_id, new_username, formatted_template_name, template_name, default_prompt, default_message, current_timestamp
+                                ]).collect()
+                            except Exception as e:
+                                st.error(f"Error inserting template '{formatted_template_name}': {e}")
+
+                        st.toast(f"Default templates for user {new_username} successfully created!", icon="✅")
+
+
                         st.session_state["logged_in"] = True
                         st.session_state["username"] = new_username
                         st.session_state["last_login"] = "First time login!"
                         st.session_state["first_login"] = True
+
                         st.success(f"Account created! Welcome, {new_username}!")
                         st.rerun()
 
@@ -165,8 +215,8 @@ elif st.session_state["logged_in"] and st.session_state["username"] != 'guest':
             st.Page("pages/Home.py", title="Home"),
             st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
             st.Page("pages/Message_Generation.py", title="Message Generation"),
+            st.Page("pages/Chat_History.py", title="Chat History"),
             st.Page("pages/Template_Manager.py", title="Template Manager"),
-            st.Page("pages/Chat_History.py", title="Chat Manager"),
             st.Page("pages/Customer_Stories.py", title="Story Manager")
         ]
     }
