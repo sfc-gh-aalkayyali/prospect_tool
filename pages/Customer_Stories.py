@@ -60,7 +60,7 @@ with cols[1]:
 
 customer_story = st.text_area("Customer Success Story", height=200, key="customer_story", placeholder="Type here...")
 
-if st.button("Save Customer Story", use_container_width=True):
+if st.button("Save Customer Story", use_container_width=True, type='primary'):
     if not customer_name.strip():
         st.warning("Please enter the company name for the customer before saving.")
     elif not customer_industry.strip():
@@ -129,34 +129,70 @@ else:
                 updated_industry = st.text_input("Industry", industry, key=f"industry_{story_id}")
                 updated_story = st.text_area("Success Story", story_text, height=150, key=f"story_{story_id}")
 
-                col1, col2, col3 = st.columns(3)
+                col1, col2 = st.columns(2)
                 with col1:
                     if st.button("Update", key=f"update_{story_id}", use_container_width=True):
-                        try:
-                            update_query = f"""
-                                UPDATE STORIES 
-                                SET COMPANY_NAME = '{updated_name.replace("'", "''")}', 
-                                    INDUSTRY = '{updated_industry.replace("'", "''")}', 
-                                    TEXT = '{updated_name} - {updated_story.replace("'", "''")}'
-                                WHERE STORY_ID = '{story_id}'
-                            """
-                            session.sql(update_query).collect()
-                            st.success(f"Updated story for {updated_name}")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error updating story: {e}")
+                        update_query = f"""
+                            UPDATE STORIES 
+                            SET COMPANY_NAME = '{updated_name.replace("'", "''")}', 
+                                INDUSTRY = '{updated_industry.replace("'", "''")}', 
+                                TEXT = '{updated_name} - {updated_story.replace("'", "''")}'
+                            WHERE STORY_ID = '{story_id}'
+                        """
+                        with st.spinner(text="In progress..."):
+                            try:
+                                session.sql(update_query).collect()
+                                st.toast(f"Updated story for '{escaped_customer_name}'!", icon="🎉")
+
+                                cortex_search_query = """
+                                    CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                                    ON text
+                                    ATTRIBUTES company_name, industry
+                                    WAREHOUSE = compute_wh
+                                    TARGET_LAG = '24 hours'
+                                    EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                                    AS (
+                                        SELECT 
+                                            text,
+                                            industry,
+                                            company_name
+                                        FROM LINKEDIN.public.stories
+                                    );
+                                """
+                                session.sql(cortex_search_query).collect()
+                                st.toast("Cortex Search function successfully updated!", icon="✅")
+                                
+                            except Exception as e:
+                                st.error(f"Error saving template: {e}")
 
                 with col2:
                     if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
-                        try:
-                            delete_query = f"DELETE FROM STORIES WHERE STORY_ID = '{story_id}'"
-                            session.sql(delete_query).collect()
-                            st.success(f"Deleted story for {company_name}")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error deleting story: {e}")
-
-st.markdown("---")
+                        delete_query = f"DELETE FROM STORIES WHERE STORY_ID = '{story_id}'"
+                        with st.spinner(text="In progress..."):
+                            try:
+                                session.sql(delete_query).collect()
+                                st.toast(f"Deleted story.", icon="🎉")
+                                
+                                cortex_search_query = """
+                                    CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                                    ON text
+                                    ATTRIBUTES company_name, industry
+                                    WAREHOUSE = compute_wh
+                                    TARGET_LAG = '24 hours'
+                                    EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                                    AS (
+                                        SELECT 
+                                            text,
+                                            industry,
+                                            company_name
+                                        FROM LINKEDIN.public.stories
+                                    );
+                                """
+                                session.sql(cortex_search_query).collect()
+                                st.toast("Cortex Search function successfully updated!", icon="✅")
+                                
+                            except Exception as e:
+                                st.error(f"Error saving template: {e}")
 
 # 📌 Section: Navigation Buttons
 if st.button("Go to Message Generation", use_container_width=True):

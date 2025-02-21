@@ -224,7 +224,8 @@ elif st.session_state["logged_in"] and st.session_state["username"] != 'guest':
             st.Page("pages/Message_Generation.py", title="Message Generation"),
             st.Page("pages/Chat_History.py", title="Chat History"),
             st.Page("pages/Template_Manager.py", title="Template Manager"),
-            st.Page("pages/Customer_Stories.py", title="Story Manager")
+            st.Page("pages/Customer_Stories.py", title="Customer Story Manager"),
+            st.Page("pages/Battle_Cards.py", title="Battle Cards Manager"),
         ]
     }
     pg = st.navigation(pages)

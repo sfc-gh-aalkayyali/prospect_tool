@@ -88,7 +88,7 @@ with col1:
 with col2:
     message_text = st.text_area("Customize Message", value=default_message, height=200, key="new_template_text", placeholder="Type here...", help="You can add any example or previous message you have sent to a prospective customer.\n\nThis will allow the AI model to follow a similar structure and writing style to your sample message/template.")
 
-if st.button("Save New Template", use_container_width=True):
+if st.button("Save New Template", use_container_width=True, type="primary"):
     if not template_name.strip():
         st.warning("Please enter a name for the template before saving.")
     elif not user_prompt.strip() or not message_text.strip():
@@ -165,73 +165,45 @@ try:
             for row in saved_templates:
                 template_id, template_name, message_type, user_prompt, message_text = row
 
-                if f"edit_mode_{template_id}" not in st.session_state:
-                    st.session_state[f"edit_mode_{template_id}"] = False
-
-                with st.expander(f"{template_name} ({message_type} Template)", expanded=False):
-                    if st.session_state[f"edit_mode_{template_id}"]:
-                        col1, col2 = st.columns([0.5, 0.5])
-
-                        with col1:
-                            new_template_name = st.text_input(
-                                "Template Name", 
-                                value=template_name, 
-                                key=f"edit_name_{template_id}", 
-                                max_chars=30
-                            )
-                            new_prompt = st.text_area("Edit Prompt", value=user_prompt, key=f"edit_prompt_{template_id}", height=150, placeholder="Type here...")
-
-                        with col2:
-                            new_message = st.text_area("Edit Message", value=message_text, key=f"edit_message_{template_id}", height=150, placeholder="Type here...")
-
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("Save", key=f"save_{template_id}", use_container_width=True):
-                                escaped_name = new_template_name.replace("'", "''")
-                                escaped_prompt = new_prompt.replace("'", "''")
-                                escaped_message = new_message.replace("'", "''")
-
-                                update_query = f"""
+                with st.expander(f"{template_name} ({message_type} Template)"):
+                    updated_name = st.text_input("Template Name", template_name, key=f"edit_name_{template_id}")
+                    updated_prompt = st.text_area("Edit Prompt", user_prompt, key=f"edit_prompt_{template_id}", height=150)
+                    updated_message = st.text_area("Edit Message", message_text, key=f"edit_message_{template_id}", height=150)
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Update", key=f"update_{template_id}", use_container_width=True):
+                            try:
+                                update_query = """
                                     UPDATE TEMPLATES 
-                                    SET NAME_OF_TEMPLATE = '{escaped_name}', 
-                                        USER_PROMPT = '{escaped_prompt}', 
-                                        MESSAGE_TEXT = '{escaped_message}'
-                                    WHERE ID = '{template_id}' AND USERNAME = '{username}'
+                                    SET NAME_OF_TEMPLATE = ?, 
+                                        USER_PROMPT = ?, 
+                                        MESSAGE_TEXT = ?
+                                    WHERE ID = ? AND USERNAME = ?
                                 """
-                                try:
-                                    session.sql(update_query).collect()
-                                    st.success(f"{escaped_name} updated")
-                                    st.session_state[f"edit_mode_{template_id}"] = False
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Error updating template: {e}")
-
-                        with col2:
-                            if st.button("Cancel", key=f"cancel_edit_{template_id}", use_container_width=True):
-                                st.session_state[f"edit_mode_{template_id}"] = False
+                                session.sql(update_query, params=[
+                                    updated_name.replace("'", "''"), 
+                                    updated_prompt.replace("'", "''"), 
+                                    updated_message.replace("'", "''"), 
+                                    template_id, 
+                                    username
+                                ]).collect()
+                                
+                                st.success(f"Updated template: {updated_name}")
                                 st.rerun()
-
-                    else:
-                        st.markdown(f"<u><b>Prompt:</b></u><br>{user_prompt}", unsafe_allow_html=True)
-                        st.markdown("---")
-                        st.markdown(f"<u><b>Message:</b></u><br>{message_text}", unsafe_allow_html=True)
-                        col1, col2, col3 = st.columns([0.4, 0.4, 0.2])
-
-                        with col1:
-                            if st.button("Edit", key=f"edit_{template_id}", use_container_width=True):
-                                st.session_state[f"edit_mode_{template_id}"] = True
+                            except Exception as e:
+                                st.error(f"Error updating template: {e}")
+                    with col2:
+                        if st.button("Delete", key=f"delete_{template_id}", use_container_width=True):
+                            try:
+                                delete_query = "DELETE FROM TEMPLATES WHERE ID = ? AND USERNAME = ?"
+                                session.sql(delete_query, params=[template_id, username]).collect()
+                                
+                                st.success(f"Deleted template: {template_name}")
                                 st.rerun()
+                            except Exception as e:
+                                st.error(f"Error deleting template: {e}")
 
-                        with col2:
-                            if st.button("Delete", key=f"delete_{template_id}", use_container_width=True):
-                                delete_query = f"DELETE FROM TEMPLATES WHERE ID = '{template_id}' AND USERNAME = '{username}'"
-                                try:
-                                    session.sql(delete_query).collect()
-                                    del st.session_state[f"edit_mode_{template_id}"]
-                                    st.success(f"{template_name} deleted")
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Error deleting template: {e}")
 
 except Exception as e:
     st.error(f"Error fetching templates: {e}")

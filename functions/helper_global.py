@@ -37,7 +37,13 @@ def init_session_state():
         ("template_manager_show_confirm", False),
         ("chat_history_show_confirm", False),
         ("login_show_confirm", False),
-        ("selected_customer_stories_docs", [])]:
+        ("selected_customer_stories_docs", []),
+        ("battlecards_manager_show_confirm", False),
+        ("selected_battlecards", []),
+        ("battle_card_industry", []),
+        ("battle_card_company", []),
+        ("customer_battle_cards", []),
+        ("selected_customer_battle_cards", [])]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             
@@ -120,6 +126,38 @@ def query_cortex_search_service(query):
 
     return results, search_col
 
+def query_battle_cards_cortex_search_service(query):
+    db, schema = session.get_current_database(), session.get_current_schema()
+
+    cortex_search_service = (
+        root.databases[db]
+        .schemas[schema]
+        .cortex_search_services["battle_card"]
+    )
+
+    filters = []
+
+
+    if st.session_state.customer_stories_industry:
+        filters.append({
+            "@or": [{"@eq": {"INDUSTRY": cls}} for cls in st.session_state.battle_card_industry]
+        })
+
+    if st.session_state.battle:
+        filters.append({
+            "@or": [{"@eq": {"COMPANY_NAME": cls}} for cls in st.session_state.battle_card_company]
+        })
+
+    filters_dict = {"@and": filters} if filters else {}
+
+    context_documents = cortex_search_service.search(
+        query, columns=[], filter=filters_dict, limit=st.session_state.battle_card_limit
+    )
+
+    results = context_documents.results
+    service_metadata = st.session_state.service_metadata
+    search_col = service_metadata.get("battle_card")
+    return results, search_col
 
 def query_stories_cortex_search_service(query):
     db, schema = session.get_current_database(), session.get_current_schema()

@@ -165,6 +165,57 @@ else:
                         elif not selected and story in st.session_state.selected_customer_stories_docs:
                             st.session_state.selected_customer_stories_docs.remove(story)
 
+
+            ### Add Battle Cards here
+
+            st.markdown("---")
+            st.markdown("### Competitive Battlecards (OPTIONAL)")
+
+            col1, col2 = st.columns([0.6, 0.4])
+
+            with col1:
+                st.text_input("Search Keyword", placeholder="Enter keyword...", key="battle_cards_search")
+                st.slider("Limit battle cards retrieved", min_value=1, max_value=20, value=3, key="battle_card_limit")
+            with col2:
+                battle_cards_industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."BATTLECARDS"').to_pandas()
+                battle_cards_industries = battle_cards_industries.dropna().loc[battle_cards_industries['INDUSTRY'].astype(str).str.strip() != '']
+                selected_battle_card_industries = st.multiselect("Select Industry (OPTIONAL)", battle_cards_industries,  default=st.session_state.battle_card_industry)
+                st.session_state.battle_card_industry = selected_battle_card_industries
+
+                battle_cardcompanies = session.sql('SELECT DISTINCT COMPANY_NAME FROM LINKEDIN.PUBLIC."BATTLECARDS"').to_pandas()
+                battle_cardcompanies = battle_cardcompanies.dropna().loc[battle_cardcompanies['COMPANY_NAME'].astype(str).str.strip() != '']
+                selected_battle_card_companies = st.multiselect("Select Company (OPTIONAL)", battle_cardcompanies, default=st.session_state.battle_card_company)
+                st.session_state.battle_card_company = selected_battle_card_companies
+
+            
+            def find_battle_cards():
+                if st.session_state.customer_battle_cards != []:
+                    del st.session_state.customer_battle_cards
+                    
+                if st.session_state.battle_cards_search and st.session_state.battle_cards_search.strip() != '':
+                    results, search_column = query_battle_cards_cortex_search_service(
+                        st.session_state.battle_cards_search
+                    )
+                    st.session_state.customer_battle_cards = [r[search_column] for r in results]
+                else:
+                    st.warning("You must enter a keyword search")
+
+            if st.button("Find Battle Cards", use_container_width=True):
+                find_battle_cards()
+
+            if st.session_state.customer_battle_cards != []:
+                formatted_battle_cards = [p.replace("\n", "<br>") for p in st.session_state.customer_battle_cards]
+                st.write("Customer Stories")
+                with st.container(height=300):
+                    for i, battle_card in enumerate(formatted_battle_cards, start=1):
+                        with st.container(height=200):
+                            selected = st.checkbox(f"Select Battle Card {i}", key=f"battle_card{i}")
+                            st.markdown(f"{battle_card}", unsafe_allow_html=True)
+                        if selected and battle_card not in st.session_state.selected_battle_cards:
+                            st.session_state.selected_battle_cards.append(battle_card)
+                        elif not selected and battle_card in st.session_state.selected_battle_cards:
+                            st.session_state.selected_battle_cards.remove(battle_card)
+
             st.markdown("---")
             st.markdown("### Customize & Save Template")
 
@@ -288,5 +339,5 @@ else:
         if st.button("Go to Prospect Finder", use_container_width=True):
             st.switch_page("pages/Prospect_Finder.py")
         if st.session_state.logged_in and st.session_state.username != 'guest':
-            if st.button("Go to Chat Manager", use_container_width=True):
+            if st.button("Go to Chat History", use_container_width=True):
                 st.switch_page("pages/Chat_History.py")
