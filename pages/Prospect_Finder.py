@@ -150,9 +150,9 @@ st.title(f":mag: Prospect Finder")
 st.markdown("---")
 
 suggested_prompts = [
-    "Retrieve 5 Data Engineers who have over 10 years of experience and use Hadoop or similar technologies.",
-    "What technologies do Data Scientists at Telstra typically use?",
-    "How many employees does Telstra have? How can Snowflake add value to Telstra?"
+    "Retrieve 5 Data Engineers who have over 10 years of experience and extensive knowledge of related technologies.",
+    "What technologies do Data Scientists typically use?",
+    "How can Snowflake appeal to a customer?"
 ]
 
 for index, prompt in enumerate(suggested_prompts):

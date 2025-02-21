@@ -61,7 +61,6 @@ if not st.session_state["logged_in"]:
     st.markdown(hide_sidebar_style, unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center;'>Welcome to the Snowflake Prospecting Tool</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 16px;'>Helping AE's and SDR's send the right message, to the right person, at the right time.</p>", unsafe_allow_html=True)
-
     if not st.session_state.snowflake:
         st.snow()
         st.session_state.snowflake = True

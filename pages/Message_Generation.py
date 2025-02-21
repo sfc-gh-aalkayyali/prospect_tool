@@ -110,8 +110,6 @@ else:
 
         selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=st.session_state.profile_selection)
 
-        st.session_state.profile_selection = selected_names
-
         selected_profiles_df = people_df[people_df['Full Name'].isin(selected_names)]
 
         if not selected_profiles_df.empty:
@@ -176,10 +174,9 @@ else:
                     template_options,
                     index=template_options.index(st.session_state.message_type) if st.session_state.message_type in template_options else 0
                 )
-                st.session_state.message_type = message_type
 
                 # Retrieve selected template details
-                selected_template_data = user_templates[user_templates["NAME_OF_TEMPLATE"] == st.session_state.message_type]
+                selected_template_data = user_templates[user_templates["NAME_OF_TEMPLATE"] == message_type]
 
                 system_prompt = selected_template_data["USER_PROMPT"].values[0] if not selected_template_data.empty else ""
                 message_text = selected_template_data["MESSAGE_TEXT"].values[0] if not selected_template_data.empty else ""
@@ -191,8 +188,7 @@ else:
                         "Customize Prompt",
                         value=system_prompt,
                         height=250,
-                        placeholder="Type here...",
-                        help="Include explanations of <profile>, <example>, and <story> tags."
+                        placeholder="Type here..."
                     )
                     st.session_state.system_prompt = system_prompt
 
@@ -202,7 +198,6 @@ else:
                         value=message_text,
                         height=250,
                         placeholder="Type here...",
-                        help="Provide an example message to guide the AI."
                     )
                     st.session_state.sample_message = message_text
 
