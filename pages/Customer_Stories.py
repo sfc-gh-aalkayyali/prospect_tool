@@ -132,18 +132,21 @@ else:
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("Update", key=f"update_{story_id}", use_container_width=True):
-                        update_query = f"""
+                        update_query = """
                             UPDATE STORIES 
-                            SET COMPANY_NAME = '{updated_name.replace("'", "''")}', 
-                                INDUSTRY = '{updated_industry.replace("'", "''")}', 
-                                TEXT = '{updated_name} - {updated_story.replace("'", "''")}'
-                            WHERE STORY_ID = '{story_id}'
+                            SET COMPANY_NAME = ?, 
+                                INDUSTRY = ?, 
+                                TEXT = ?
+                            WHERE STORY_ID = ?
                         """
-                        with st.spinner(text="In progress..."):
-                            try:
-                                session.sql(update_query).collect()
-                                st.toast(f"Updated story for '{escaped_customer_name}'!", icon="🎉")
+                        updated_text = f"{updated_name} - {updated_story}"
 
+                        with st.spinner(text="Updating story..."):
+                            try:
+                                session.sql(update_query, params=[updated_name, updated_industry, updated_text, story_id]).collect()
+                                st.toast(f"Updated story for '{updated_name}'!", icon="🎉")
+
+                                # Re-run Cortex Search function to update search index
                                 cortex_search_query = """
                                     CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
                                     ON text
@@ -161,18 +164,19 @@ else:
                                 """
                                 session.sql(cortex_search_query).collect()
                                 st.toast("Cortex Search function successfully updated!", icon="✅")
-                                
+
                             except Exception as e:
-                                st.error(f"Error saving template: {e}")
+                                st.error(f"Error updating story: {e}")
 
                 with col2:
                     if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
-                        delete_query = f"DELETE FROM STORIES WHERE STORY_ID = '{story_id}'"
-                        with st.spinner(text="In progress..."):
+                        delete_query = "DELETE FROM STORIES WHERE STORY_ID = ?"
+                        with st.spinner(text="Deleting story..."):
                             try:
-                                session.sql(delete_query).collect()
+                                session.sql(delete_query, params=[story_id]).collect()
                                 st.toast(f"Deleted story.", icon="🎉")
-                                
+
+                                # Re-run Cortex Search function to update search index
                                 cortex_search_query = """
                                     CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
                                     ON text
@@ -190,9 +194,10 @@ else:
                                 """
                                 session.sql(cortex_search_query).collect()
                                 st.toast("Cortex Search function successfully updated!", icon="✅")
-                                
+                                st.rerun()
                             except Exception as e:
-                                st.error(f"Error saving template: {e}")
+                                st.error(f"Error deleting story: {e}")
+
 
 # 📌 Section: Navigation Buttons
 if st.button("Go to Message Generation", use_container_width=True):

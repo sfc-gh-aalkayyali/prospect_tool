@@ -91,7 +91,7 @@ if submitted:
         """
 
         insert_query = """
-            INSERT INTO BATTLECARDS (INDUSTRY, TEXT, USERNAME, DATEADDED, COMPANY_NAME, BATTLE_CARD_ID)
+            INSERT INTO BATTLECARDS (INDUSTRY, TEXT, USERNAME, DATE_ADDED, COMPANY_NAME, BATTLE_CARD_ID)
             VALUES (?, ?, ?, ?, ?, ?)
         """
         
@@ -118,7 +118,7 @@ if submitted:
                         text,
                         industry,
                         company_name
-                    FROM LINKEDIN.public.battlecard
+                    FROM LINKEDIN.public.battlecards
                 );
             """
             session.sql(cortex_search_query).collect()
@@ -142,7 +142,7 @@ if not battlecards:
 else:
     st.text_input("Search Battlecards", key='battlecard_search', placeholder="Type to search...").strip().lower()
     
-    filtered_battlecards = [bc for bc in battlecards if st.session_state.battlecard_search in bc["NAME_OF_BATTLECARD"].lower()]
+    filtered_battlecards = [bc for bc in battlecards if st.session_state.battlecard_search in bc["COMPANY_NAME"].lower()]
     
     if st.session_state.battlecard_search and not filtered_battlecards:
         st.warning("No battlecards found.")
@@ -154,34 +154,29 @@ else:
     if filtered_battlecards:
         with st.container(height=350):  
             for bc in filtered_battlecards:
-                battlecard_id = bc["ID"]
-                name = bc["NAME_OF_BATTLECARD"]
-                strengths = bc["STRENGTHS"]
-                weaknesses = bc["WEAKNESSES"]
-                response = bc["SNOWFLAKE_RESPONSE"]
+                battlecard_id = bc["BATTLE_CARD_ID"]
+                name = bc["COMPANY_NAME"]
+                text = bc["TEXT"]
                 
                 with st.expander(f"{name}"):
                     updated_name = st.text_input("Battlecard Name", name, key=f"name_{battlecard_id}")
-                    updated_strengths = st.text_area("Strengths", strengths, key=f"strengths_{battlecard_id}")
-                    updated_weaknesses = st.text_area("Weaknesses", weaknesses, key=f"weaknesses_{battlecard_id}")
-                    updated_response = st.text_area("Snowflake Response", response, key=f"response_{battlecard_id}")
+                    updated_info = st.text_area("Information", text, key=f"strengths_{battlecard_id}")
                     
                     col1, col2 = st.columns(2)
                     with col1:
                         if st.button("Update", key=f"update_{battlecard_id}", use_container_width=True):
-                            update_query = f"""
+                            update_query = """
                                 UPDATE BATTLECARDS 
-                                SET NAME_OF_BATTLECARD = '{updated_name}', 
-                                    STRENGTHS = '{updated_strengths}', 
-                                    WEAKNESSES = '{updated_weaknesses}', 
-                                    SNOWFLAKE_RESPONSE = '{updated_response}'
-                                WHERE ID = '{battlecard_id}'
+                                SET COMPANY_NAME = ?, 
+                                    TEXT = ?
+                                WHERE BATTLE_CARD_ID = ?
                             """
-                            with st.spinner(text="In progress..."):
+                            with st.spinner(text="Updating battlecard..."):
                                 try:
-                                    session.sql(update_query).collect()
-                                    st.toast(f"Added Battle Card for {battlecard_name}.", icon="🎉")
+                                    session.sql(update_query, params=[updated_name, updated_info, battlecard_id]).collect()
+                                    st.toast(f"Updated Battle Card for {updated_name}.", icon="🎉")
                                     
+                                    # Re-run Cortex Search function to update search index
                                     cortex_search_query = """
                                         CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.battlecard
                                         ON text
@@ -194,25 +189,27 @@ else:
                                                 text,
                                                 industry,
                                                 company_name
-                                            FROM LINKEDIN.public.battlecard
+                                            FROM LINKEDIN.public.battlecards
                                         );
                                     """
                                     session.sql(cortex_search_query).collect()
                                     st.toast("Cortex Search function successfully updated!", icon="✅")
-                                    
+
                                 except Exception as e:
-                                    st.error(f"Error saving template: {e}")
+                                    st.error(f"Error updating battlecard: {e}")
+
 
 
 
                     with col2:
                         if st.button("Delete", key=f"delete_{battlecard_id}", use_container_width=True):
-                            delete_query = f"DELETE FROM BATTLECARDS WHERE ID = '{battlecard_id}'"
-                            with st.spinner(text="In progress..."):
+                            delete_query = "DELETE FROM BATTLECARDS WHERE BATTLE_CARD_ID = ?"
+                            with st.spinner(text="Deleting battlecard..."):
                                 try:
-                                    session.sql(delete_query).collect()
+                                    session.sql(delete_query, params=[battlecard_id]).collect()
                                     st.toast(f"Deleted Battle Card.", icon="🎉")
-                                    
+
+                                    # Re-run Cortex Search function to update search index
                                     cortex_search_query = """
                                         CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.battlecard
                                         ON text
@@ -225,14 +222,15 @@ else:
                                                 text,
                                                 industry,
                                                 company_name
-                                            FROM LINKEDIN.public.battlecard
+                                            FROM LINKEDIN.public.battlecards
                                         );
                                     """
                                     session.sql(cortex_search_query).collect()
                                     st.toast("Cortex Search function successfully updated!", icon="✅")
-                                    
+                                    st.rerun()
                                 except Exception as e:
-                                    st.error(f"Error saving template: {e}")
+                                    st.error(f"Error deleting battlecard: {e}")
+
 
 # 📌 Section: Navigation Buttons
 if st.button("Go to Message Generation", use_container_width=True):

@@ -132,18 +132,18 @@ def query_battle_cards_cortex_search_service(query):
     cortex_search_service = (
         root.databases[db]
         .schemas[schema]
-        .cortex_search_services["battle_card"]
+        .cortex_search_services["battlecard"]
     )
 
     filters = []
 
 
-    if st.session_state.customer_stories_industry:
+    if st.session_state.battle_card_industry:
         filters.append({
             "@or": [{"@eq": {"INDUSTRY": cls}} for cls in st.session_state.battle_card_industry]
         })
 
-    if st.session_state.battle:
+    if st.session_state.battle_card_company:
         filters.append({
             "@or": [{"@eq": {"COMPANY_NAME": cls}} for cls in st.session_state.battle_card_company]
         })
@@ -156,7 +156,7 @@ def query_battle_cards_cortex_search_service(query):
 
     results = context_documents.results
     service_metadata = st.session_state.service_metadata
-    search_col = service_metadata.get("battle_card")
+    search_col = service_metadata.get("battlecard")
     return results, search_col
 
 def query_stories_cortex_search_service(query):
