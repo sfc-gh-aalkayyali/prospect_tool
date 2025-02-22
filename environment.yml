@@ -10,4 +10,4 @@ dependencies:
   - snowflake.core
   - st-theme
   - streamlit-extras
-  - streamlit
+  - pandas

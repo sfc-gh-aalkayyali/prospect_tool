@@ -4,12 +4,11 @@ entities:
     type: streamlit
     identifier:
       name: prospect_tool
-    main_file: streamlit_app.py
+    main_file: Login.py
     pages_dir: pages
     query_warehouse: COMPUTE_WH
     stage: development
     artifacts:
-      - streamlit_app.py
       - environment.yml
       - pages
       - functions/helper_finder.py
@@ -18,6 +17,13 @@ entities:
       - functions/helper_session.py
       - pages/Prospect_Finder.py
       - pages/Message_Generation.py
+      - pages/Battle_Cards.py
+      - pages/Chat_History.py
+      - pages/Customer_Stories.py
+      - pages/Home.py
+      - pages/Template_Manager.py
+
+
 
 
 
