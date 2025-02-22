@@ -124,7 +124,7 @@ else:
             story_text = story["TEXT"].replace(f"{company_name} - ", "", 1)  # Remove company name prefix
             date_added = story["DATE_ADDED"]
 
-            with st.expander(f"📖 {company_name} - {industry} ({date_added})"):
+            with st.expander(f"{company_name} - {industry} ({date_added})"):
                 updated_name = st.text_input("Company Name", company_name, key=f"name_{story_id}")
                 updated_industry = st.text_input("Industry", industry, key=f"industry_{story_id}")
                 updated_story = st.text_area("Success Story", story_text, height=150, key=f"story_{story_id}")

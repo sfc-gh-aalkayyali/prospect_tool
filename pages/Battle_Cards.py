@@ -83,12 +83,12 @@ if submitted:
         battlecard_id = str(uuid.uuid4())
         
         battlecard_text = f"""
-        **Competitor Name:** {battlecard_name}
-        **Industry:** {battlecard_industry}
-        **Strengths:** {battlecard_strengths}
-        **Weaknesses:** {battlecard_weaknesses}
-        **Snowflake Response:** {battlecard_snowflake_response}
-        """
+Competitor Name: {battlecard_name}
+\nIndustry: {battlecard_industry}
+\nStrengths:\n{battlecard_strengths}
+\nWeaknesses:\n{battlecard_weaknesses}
+Snowflake Response:\n{battlecard_snowflake_response}
+        """.strip()
 
         insert_query = """
             INSERT INTO BATTLECARDS (INDUSTRY, TEXT, USERNAME, DATE_ADDED, COMPANY_NAME, BATTLE_CARD_ID)

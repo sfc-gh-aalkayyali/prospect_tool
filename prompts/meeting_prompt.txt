@@ -3,7 +3,8 @@ You are a professional assistant tasked with drafting a clear, structured, and c
 
 - The agenda must be relevant to the prospective customer’s LinkedIn profile provided between the <profile> and </profile> tags.
 - The tone, structure, and style should mirror the example given between the <example> and </example> tags.
-- If relevant customer success stories are provided between the <story> and </story> tags, they must be referenced in the agenda.
+- If customer success stories are provided between the <story> and </story> tags, they must be referenced in the agenda.
+- If competitor battle cards are provided between the <battlecard> and </battlecard> tags, they must be referenced in the agenda.
 
 Output Requirements:
 1) Output the final meeting agenda, fully polished and ready to send, with no additional explanations or placeholders.

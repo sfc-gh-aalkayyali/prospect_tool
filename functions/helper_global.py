@@ -43,7 +43,7 @@ def init_session_state():
         ("battle_card_industry", []),
         ("battle_card_company", []),
         ("customer_battle_cards", []),
-        ("selected_customer_battle_cards", [])]:
+        ("selected_battle_cards", [])]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             

@@ -51,7 +51,17 @@ def create_direct_message(profile):
 <story>
 {story}
 </story>
-"""
+""".strip()
+    
+    battle_card_content = ""
+
+    if st.session_state.selected_battle_cards:
+        for battlecard in st.session_state.selected_battle_cards:
+            battle_card_content = f"""
+<battlecard>
+{battlecard}
+</battlecard>
+""".strip()
 
     # Construct the final prompt
     user_prompt = f"""
@@ -63,6 +73,7 @@ def create_direct_message(profile):
 {sample_message}
 </example>
 {story_content}
+{battle_card_content}
 [/INST]
 """.strip()
 

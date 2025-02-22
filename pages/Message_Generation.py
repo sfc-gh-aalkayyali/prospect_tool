@@ -138,7 +138,7 @@ else:
 
             
             def find_stories():
-                if st.session_state.customer_stories_docs != []:
+                if st.session_state.customer_stories_docs and st.session_state.customer_stories_docs != []:
                     del st.session_state.customer_stories_docs
                     
                 if st.session_state.customer_stories_search and st.session_state.customer_stories_search.strip() != '':
@@ -189,7 +189,7 @@ else:
 
             
             def find_battle_cards():
-                if st.session_state.customer_battle_cards != []:
+                if st.session_state.customer_battle_cards and st.session_state.customer_battle_cards != []:
                     del st.session_state.customer_battle_cards
                     
                 if st.session_state.battle_cards_search and st.session_state.battle_cards_search.strip() != '':
