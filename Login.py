@@ -70,9 +70,10 @@ if not st.session_state["logged_in"]:
         st.snow()
         st.session_state.snowflake = True
         
-    tabs = st.tabs(["Login", "Register"])
     padding1, content, padding2 = st.columns([25, 50, 25])
     with content:
+        tabs = st.tabs(["Login", "Register"])
+
         with tabs[0]:
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
