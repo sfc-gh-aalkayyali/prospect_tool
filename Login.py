@@ -34,21 +34,17 @@ def get_last_login(username):
     result = session.sql(f"SELECT last_login FROM USERS WHERE username = '{username}'").collect()
     return result[0][0] if result and result[0][0] else "First time login!"
 
-message_types = {
-    "Email": "email_prompt.txt",
-    "Text": "text_prompt.txt",
-    "LinkedIn": "linkedin_prompt.txt",
-    "Call": "call_prompt.txt",
-    "Meeting": "meeting_prompt.txt",
-}
+if "allow_reset" not in st.session_state:
+    st.session_state.allow_reset = False
 
-def load_prompt(file_name):
-    file_path = os.path.join("prompts", file_name)
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read().strip().split("---")
-            return content[0].strip(), content[1].strip() if len(content) > 1 else ""
-    return "", ""
+if "new_password" not in st.session_state:
+    st.session_state.new_password = ""
+
+if "failed_attempts" not in st.session_state:
+    st.session_state.failed_attempts = 0
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
 if not st.session_state["logged_in"]:
     st.session_state.setdefault("snowflake", False)
@@ -59,11 +55,6 @@ if not st.session_state["logged_in"]:
     </style>
     """
     st.markdown(hide_sidebar_style, unsafe_allow_html=True)
-    st.write("")
-    st.write("")
-    st.write("")
-    st.write("")
-
     st.markdown("<h1 style='text-align: center;'>Welcome to the Snowflake Prospecting Tool</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 16px;'>Helping AE's and SDR's send the right message, to the right person, at the right time.</p>", unsafe_allow_html=True)
     if not st.session_state.snowflake:
@@ -72,147 +63,110 @@ if not st.session_state["logged_in"]:
         
     padding1, content, padding2 = st.columns([25, 50, 25])
     with content:
-        tabs = st.tabs(["Login", "Register"])
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
 
-        with tabs[0]:
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
+        if st.button("Login", use_container_width=True, type='primary'):
+            if username and password:
+                query = f"SELECT password FROM USERS WHERE username = '{username}'"
+                result = session.sql(query).collect()
 
-            if st.button("Login", use_container_width=True, type='primary'):
-                if username and password:
-                    query = f"SELECT password FROM USERS WHERE username = '{username}'"
-                    result = session.sql(query).collect()
-
-                    if result:
-                        stored_hashed_password = result[0][0]
-                        if check_password(password.strip(), stored_hashed_password):
-                            update_last_login(username)
-                            st.session_state["logged_in"] = True
-                            st.session_state["username"] = username
-                            st.session_state["last_login"] = get_last_login(username)
-                            st.session_state["first_login"] = False
-                            st.session_state["failed_attempts"] = 0
-                            st.success(f"Welcome back, {username}!")
-                            st.rerun()
-                        else:
-                            st.session_state["failed_attempts"] += 1
-                            if st.session_state["failed_attempts"] >= 3:
-                                st.error("Too many failed attempts. You may want to reset your password.")
-                            else:
-                                st.error("Incorrect password.")
-                    else:
-                        st.error("Username not found.")
-                else:
-                    st.warning("Please enter both username and password.")
-
-            if st.button("Continue as Guest", use_container_width=True):
-                st.session_state["logged_in"] = True
-                st.session_state["username"] = "guest"
-                st.session_state["last_login"] = "Guest users don't have saved history."
-                st.session_state["first_login"] = False
-                st.success("Logged in as Guest.")
-                st.rerun()
-
-        with tabs[1]:
-            new_username = st.text_input("New Username")
-            new_password = st.text_input("New Password", type="password")
-            confirm_password = st.text_input("Confirm Password", type="password")
-            hint = st.text_input("Password Hint (for recovery)")
-
-            if st.button("Create Account", use_container_width=True, type='primary'):
-                if not new_username or not new_password or not confirm_password or not hint:
-                    st.warning("All fields are required.")
-                elif new_username.lower() == "guest":
-                    st.warning("Username cannot be 'guest'. Please choose another name.")
-                elif len(new_username) > 25:
-                    st.warning("Username must be a maximum of 25 characters.")
-                elif new_password != confirm_password:
-                    st.warning("Passwords do not match.")
-                elif not check_password_requirements(new_password):
-                    st.warning("Password must be at least 6 characters long and contain a number and a symbol.")
-                else:
-                    check_user_query = f"SELECT username FROM USERS WHERE username = '{new_username}'"
-                    existing_users = session.sql(check_user_query).collect()
-
-                    if existing_users:
-                        st.error("Username already exists. Please choose another.")
-                    else:
-                        hashed_password = hash_value(new_password)
-                        hashed_hint = hash_value(hint)
-                        ## insert user
-                        insert_query = """
-                            INSERT INTO USERS (username, password, hint, last_login) 
-                            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-                        """
-
-                        try:
-                            session.sql(insert_query, params=[new_username, hashed_password, hashed_hint]).collect()
-                            st.success(f"User '{new_username}' created successfully.")
-                        except Exception as e:
-                            st.error(f"Error creating user '{new_username}': {e}")
-                        
-                        st.toast(f"User for '{new_username}' successfully created!", icon="🎉")
-
-                        ## create default templates
-                        for template_name, prompt in message_types.items():
-                            default_prompt, default_message = load_prompt(prompt)
-                            template_id = str(uuid.uuid4())
-                            current_timestamp = datetime.now()
-                            
-                            # Fix formatting for the template name
-                            formatted_template_name = f"{new_username}'s {template_name} Template"
-
-                            insert_query = """
-                                INSERT INTO TEMPLATES (ID, USERNAME, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT, DATE_ADDED) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?)
-                            """
-
-                            try:
-                                session.sql(insert_query, params=[
-                                    template_id, new_username, formatted_template_name, template_name, default_prompt, default_message, current_timestamp
-                                ]).collect()
-                            except Exception as e:
-                                st.error(f"Error inserting template '{formatted_template_name}': {e}")
-
-                        st.toast(f"Default templates for user {new_username} successfully created!", icon="✅")
-
-
+                if result:
+                    stored_hashed_password = result[0][0]
+                    if check_password(password.strip(), stored_hashed_password):
+                        update_last_login(username)
                         st.session_state["logged_in"] = True
-                        st.session_state["username"] = new_username
-                        st.session_state["last_login"] = "First time login!"
-                        st.session_state["first_login"] = True
-
-                        st.success(f"Account created! Welcome, {new_username}!")
+                        st.session_state["username"] = username
+                        st.session_state["last_login"] = get_last_login(username)
+                        st.session_state["first_login"] = False
+                        st.session_state["failed_attempts"] = 0
+                        st.success(f"Welcome back, {username}!")
                         st.rerun()
+                    else:
+                        st.session_state["failed_attempts"] += 1
+                        if st.session_state["failed_attempts"] >= 3:
+                            st.error("Too many failed attempts. You may want to reset your password.")
+                        else:
+                            st.error("Incorrect password.")
+                else:
+                    st.error("Username not found.")
+            else:
+                st.warning("Please enter both username and password.")
+        if st.button("Register", use_container_width=True):
+            st.switch_page("pages/Register.py")
+            st.rerun()
+            st.stop()
+        if st.button("Continue as Guest", use_container_width=True):
+            st.session_state["logged_in"] = True
+            st.session_state["username"] = "guest"
+            st.session_state["last_login"] = "Guest users don't have saved history."
+            st.session_state["first_login"] = False
+            st.success("Logged in as Guest.")
+            st.rerun()
 
     if st.session_state["failed_attempts"] >= 3:
         with content:
             st.markdown("<hr>", unsafe_allow_html=True)
             st.subheader("Reset Password")
             reset_username = st.text_input("Enter your username to reset password")
-            new_reset_password = st.text_input("Enter new password", type="password")
-            reset_hint = st.text_input("Enter your password hint")
 
-            if st.button("Reset Password", use_container_width=True):
-                query = f"SELECT hint FROM USERS WHERE username = '{reset_username}'"
+            if st.button("Check username", use_container_width=True):
+                query = f"SELECT hint_question, hint FROM USERS WHERE username = '{reset_username}'"
                 result = session.sql(query).collect()
 
                 if result:
-                    stored_hashed_hint = result[0][0]
-                    if hash_value(reset_hint) == stored_hashed_hint:
-                        if check_password_requirements(new_reset_password):
-                            hashed_new_password = hash_value(new_reset_password)
-                            update_query = f"UPDATE USERS SET password = '{hashed_new_password}' WHERE username = '{reset_username}'"
-                            session.sql(update_query).collect()
-                            st.success("Password reset successfully. Please log in.")
-                            st.session_state["failed_attempts"] = 0
-                            st.rerun()
-                        else:
-                            st.warning("Password must be at least 6 characters long and contain a number and a symbol.")
+                    hint_question = result[0]["HINT_QUESTION"] if "HINT_QUESTION" in result[0].as_dict() else None
+                    stored_hashed_hint = result[0]["HINT"] if "HINT" in result[0].as_dict() else None
+
+                    if hint_question:
+                        st.session_state["reset_username"] = reset_username
+                        st.session_state["hint_question"] = hint_question
+                        st.session_state["stored_hashed_hint"] = stored_hashed_hint
+                        st.session_state["hint_verified"] = False  # Reset verification state
+
                     else:
-                        st.error("Incorrect password hint.")
+                        st.error("No hint question set for this user. Please contact support.")
                 else:
                     st.error("Username not found.")
+
+            # Display hint question if username is verified
+            if "hint_question" in st.session_state:
+                reset_hint = st.text_input(f"{st.session_state['hint_question']}", 
+                                        placeholder="Enter your answer here...", 
+                                        key="reset_hint")
+
+                if st.button("Submit Hint Answer", use_container_width=True):
+                    if reset_hint.strip():
+                        if hash_value(reset_hint) == st.session_state["stored_hashed_hint"]:
+                            st.session_state["hint_verified"] = True  # Allow password reset
+                            st.success("Hint verified successfully. Please set a new password.")
+                        else:
+                            st.error("Incorrect hint answer.")
+                    else:
+                        st.warning("Please enter an answer to the hint question.")
+
+            # Show password reset fields only if hint is verified
+            if st.session_state.get("hint_verified", False):
+                new_reset_password = st.text_input("Enter new password", type="password")
+                confirm_reset_password = st.text_input("Confirm new password", type="password")
+
+                if st.button("Reset Password", use_container_width=True):
+                    if new_reset_password and confirm_reset_password:
+                        if new_reset_password == confirm_reset_password:
+                            if check_password_requirements(new_reset_password):
+                                hashed_new_password = hash_value(new_reset_password)
+                                update_query = f"UPDATE USERS SET password = '{hashed_new_password}' WHERE username = '{st.session_state['reset_username']}'"
+                                session.sql(update_query).collect()
+                                st.success("Password reset successfully. Please log in.")
+                                st.session_state["failed_attempts"] = 0
+                                st.rerun()
+                            else:
+                                st.warning("Password must be at least 6 characters long and contain a number and a symbol.")
+                        else:
+                            st.warning("Passwords do not match.")
+                    else:
+                        st.warning("Please fill in both password fields.")
+
 elif st.session_state["logged_in"] and st.session_state["username"] != 'guest':
     expand_sidebar_script = """
     <script>
