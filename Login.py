@@ -59,16 +59,20 @@ if not st.session_state["logged_in"]:
     </style>
     """
     st.markdown(hide_sidebar_style, unsafe_allow_html=True)
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
     st.markdown("<h1 style='text-align: center;'>Welcome to the Snowflake Prospecting Tool</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 16px;'>Helping AE's and SDR's send the right message, to the right person, at the right time.</p>", unsafe_allow_html=True)
     if not st.session_state.snowflake:
         st.snow()
         st.session_state.snowflake = True
         
+    tabs = st.tabs(["Login", "Register"])
     padding1, content, padding2 = st.columns([25, 50, 25])
     with content:
-        tabs = st.tabs(["Login", "Register"])
-
         with tabs[0]:
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
