@@ -4,13 +4,16 @@ entities:
     type: streamlit
     identifier:
       name: prospect_tool
-    main_file: Login.py
+    main_file: Root.py
     pages_dir: pages
     query_warehouse: COMPUTE_WH
     stage: development
     artifacts:
       - environment.yml
       - pages
+      - prompts
+      - functions
+      - functions/Loading_Default.py
       - functions/helper_finder.py
       - functions/helper_generation.py
       - functions/helper_global.py
@@ -22,7 +25,17 @@ entities:
       - pages/Customer_Stories.py
       - pages/Home.py
       - pages/Template_Manager.py
-
+      - pages/Login.py
+      - pages/Register.py
+      - prompts/call_prompt.txt
+      - prompts/chat_history_prompt.txt
+      - prompts/chat_history_title_prompt.txt
+      - prompts/email_prompt.txt
+      - prompts/linkedin_prompt.txt
+      - prompts/meeting_prompt.txt
+      - prompts/query_system_prompt.txt
+      - prompts/table_system_prompt.txt
+      - prompts/text_prompt.txt
 
 
 
