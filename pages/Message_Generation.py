@@ -205,7 +205,7 @@ else:
 
             if st.session_state.customer_battle_cards != []:
                 formatted_battle_cards = [p.replace("\n", "<br>") for p in st.session_state.customer_battle_cards]
-                st.write("Customer Stories")
+                st.write("Battle Cards")
                 with st.container(height=300):
                     for i, battle_card in enumerate(formatted_battle_cards, start=1):
                         with st.container(height=200):

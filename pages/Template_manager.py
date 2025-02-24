@@ -94,10 +94,6 @@ if st.button("Save New Template", use_container_width=True, type="primary"):
     elif not user_prompt.strip() or not message_text.strip():
         st.warning("Please enter both a prompt and message before saving.")
     else:
-        # escaped_template_name = template_name.replace("'", "''")
-        # escaped_prompt = user_prompt.replace("'", "''")
-        # escaped_message = message_text.replace("'", "''")
-
         # Check if a template with the same name already exists
         query = """
             SELECT ID FROM TEMPLATES 
@@ -151,19 +147,33 @@ if st.button("Save New Template", use_container_width=True, type="primary"):
 st.markdown("---")
 st.markdown("### Your Saved Templates")
 
-try:
-    saved_templates = session.sql(f"""
-        SELECT ID, NAME_OF_TEMPLATE, TYPE_OF_MESSAGE, USER_PROMPT, MESSAGE_TEXT 
+query = f"""
+        SELECT * 
         FROM TEMPLATES 
-        WHERE USERNAME = '{username}'
-    """).collect()
+        WHERE USERNAME = ?
+        ORDER BY DATE_ADDED
+    """
 
-    if not saved_templates:
-        st.info("No saved templates found. Create one above.")
-    else:
+templates = session.sql(query, params=[username]).collect()
+
+if not templates:
+    st.info("You have no templates yet.")
+else:
+    st.text_input("Search Templates", key='template_search', placeholder="Type to search...").strip().lower()
+
+    filtered_templates = [template for template in templates if st.session_state.template_search in template["NAME_OF_TEMPLATE"].lower()]
+
+    if st.session_state.template_search and not filtered_templates:
+        st.warning("No templates found.")
+        if st.button("Reset Search", key="reset_template_search", use_container_width=True):
+            if st.session_state.template_search:
+                del st.session_state.template_search
+                st.session_state.template_search = ''
+                st.rerun()
+    if filtered_templates:
         with st.container(height=350):  
-            for row in saved_templates:
-                template_id, template_name, message_type, user_prompt, message_text = row
+            for row in filtered_templates:
+                template_id, username, template_name, message_type, user_prompt, message_text, date_added = row
 
                 with st.expander(f"{template_name} ({message_type} Template)"):
                     updated_name = st.text_input("Template Name", template_name, key=f"edit_name_{template_id}")
@@ -182,9 +192,9 @@ try:
                                     WHERE ID = ? AND USERNAME = ?
                                 """
                                 session.sql(update_query, params=[
-                                    updated_name.replace("'", "''"), 
-                                    updated_prompt.replace("'", "''"), 
-                                    updated_message.replace("'", "''"), 
+                                    updated_name, 
+                                    updated_prompt, 
+                                    updated_message, 
                                     template_id, 
                                     username
                                 ]).collect()
@@ -203,10 +213,6 @@ try:
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error deleting template: {e}")
-
-
-except Exception as e:
-    st.error(f"Error fetching templates: {e}")
 
 if st.button("Go to Message Generator", use_container_width=True):
     st.switch_page("pages/Message_Generation.py")

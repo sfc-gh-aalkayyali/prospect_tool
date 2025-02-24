@@ -87,7 +87,7 @@ Competitor Name: {battlecard_name}
 \nIndustry: {battlecard_industry}
 \nStrengths:\n{battlecard_strengths}
 \nWeaknesses:\n{battlecard_weaknesses}
-Snowflake Response:\n{battlecard_snowflake_response}
+\nSnowflake Response:\n{battlecard_snowflake_response}
         """.strip()
 
         insert_query = """
@@ -97,9 +97,9 @@ Snowflake Response:\n{battlecard_snowflake_response}
         
         try:
             session.sql(insert_query, params=[
-            battlecard_industry.replace("'", "''"), 
-            battlecard_text.replace("'", "''"), 
-            username.replace("'", "''"), 
+            battlecard_industry, 
+            battlecard_text, 
+            username, 
             datetime.now(), 
             battlecard_name,
             battlecard_id
@@ -133,9 +133,9 @@ st.markdown("### Manage Your Battlecards")
 
 query = f"""
     SELECT * FROM BATTLECARDS 
-    WHERE USERNAME = '{username}' ORDER BY DATE_ADDED
+    WHERE USERNAME = ? ORDER BY DATE_ADDED
 """
-battlecards = session.sql(query).collect()
+battlecards = session.sql(query, params=[username]).collect()
 
 if not battlecards:
     st.info("You have no battlecards yet.")
@@ -149,6 +149,7 @@ else:
         if st.button("Reset Search", key="reset_battlecard_search", use_container_width=True):
             if st.session_state.battlecard_search:
              del st.session_state.battlecard_search
+             st.session_state.battlecard_search = ''
             st.rerun()
     
     if filtered_battlecards:

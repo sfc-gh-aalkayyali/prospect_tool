@@ -69,18 +69,16 @@ if st.button("Save Customer Story", use_container_width=True, type='primary'):
         st.warning("Please enter a success story before saving.")
     else:
         story_id = str(uuid.uuid4())
-        escaped_customer_name = customer_name.replace("'", "''")
-        escaped_customer_story = customer_story.replace("'", "''")
-        escaped_customer_industry = customer_industry.replace("'", "''")
-
-        insert_query = f"""
+        insert_query = """
             INSERT INTO STORIES (INDUSTRY, TEXT, USERNAME, DATE_ADDED, COMPANY_NAME, STORY_ID)
-            VALUES ('{escaped_customer_industry}', '{escaped_customer_name} - {escaped_customer_story}', '{username}', '{datetime.now()}', '{escaped_customer_name}', '{story_id}')
+            VALUES (?, ?, ?, ?, ?, ?)
         """
+        params = (customer_industry, f"{customer_name} - {customer_story}", username, datetime.now(), customer_name, story_id)
+
         with st.spinner(text="In progress..."):
             try:
-                session.sql(insert_query).collect()
-                st.toast(f"Customer Story for '{escaped_customer_name}' added!", icon="🎉")
+                session.sql(insert_query, params=params).collect()
+                st.toast(f"Customer Story for '{customer_name}' added!", icon="🎉")
 
                 cortex_search_query = """
                     CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
@@ -109,94 +107,111 @@ st.markdown("---")
 # 📌 Section: Manage Your Customer Stories
 st.markdown("### Manage Your Customer Stories")
 
-# Fetch only the stories that belong to the logged-in user
-query = f"SELECT STORY_ID, COMPANY_NAME, INDUSTRY, TEXT, DATE_ADDED FROM STORIES WHERE USERNAME = '{username}' ORDER BY DATE_ADDED"
-user_stories = session.sql(query).collect()
+query = f"""
+    SELECT * FROM STORIES 
+    WHERE USERNAME = ? ORDER BY DATE_ADDED
+"""
+stories = session.sql(query, params=[username]).collect()
 
-if not user_stories:
+
+if not stories:
     st.info("You have no customer stories yet.")
 else:
-    with st.container(height=350):  
-        for story in user_stories:
-            story_id = story["STORY_ID"]
-            company_name = story["COMPANY_NAME"]
-            industry = story["INDUSTRY"]
-            story_text = story["TEXT"].replace(f"{company_name} - ", "", 1)  # Remove company name prefix
-            date_added = story["DATE_ADDED"]
+    # Search bar
+    st.text_input("Search Customer Stories", key='story_search', placeholder="Type to search...").strip().lower()
 
-            with st.expander(f"{company_name} - {industry} ({date_added})"):
-                updated_name = st.text_input("Company Name", company_name, key=f"name_{story_id}")
-                updated_industry = st.text_input("Industry", industry, key=f"industry_{story_id}")
-                updated_story = st.text_area("Success Story", story_text, height=150, key=f"story_{story_id}")
+    filtered_stories = [story for story in stories if st.session_state.story_search in story["COMPANY_NAME"].lower()]
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Update", key=f"update_{story_id}", use_container_width=True):
-                        update_query = """
-                            UPDATE STORIES 
-                            SET COMPANY_NAME = ?, 
-                                INDUSTRY = ?, 
-                                TEXT = ?
-                            WHERE STORY_ID = ?
-                        """
-                        updated_text = f"{updated_name} - {updated_story}"
+    if st.session_state.story_search and not filtered_stories:
+        st.warning("No customer stories found.")
+        if st.button("Reset Search", key="reset_story_search", use_container_width=True):
+            if st.session_state.story_search:
+                del st.session_state.story_search
+                st.session_state.story_search = ''
+            st.rerun()
 
-                        with st.spinner(text="Updating story..."):
-                            try:
-                                session.sql(update_query, params=[updated_name, updated_industry, updated_text, story_id]).collect()
-                                st.toast(f"Updated story for '{updated_name}'!", icon="🎉")
+    if filtered_stories:
+        with st.container(height=350):  
+            for story in filtered_stories:
+                story_id = story["STORY_ID"]
+                company_name = story["COMPANY_NAME"]
+                industry = story["INDUSTRY"]
+                story_text = story["TEXT"].replace(f"{company_name} - ", "", 1)  # Remove company name prefix
+                date_added = story["DATE_ADDED"]
 
-                                # Re-run Cortex Search function to update search index
-                                cortex_search_query = """
-                                    CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
-                                    ON text
-                                    ATTRIBUTES company_name, industry
-                                    WAREHOUSE = compute_wh
-                                    TARGET_LAG = '24 hours'
-                                    EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-                                    AS (
-                                        SELECT 
-                                            text,
-                                            industry,
-                                            company_name
-                                        FROM LINKEDIN.public.stories
-                                    );
-                                """
-                                session.sql(cortex_search_query).collect()
-                                st.toast("Cortex Search function successfully updated!", icon="✅")
+                with st.expander(f"{company_name} - {industry} ({date_added})"):
+                    updated_name = st.text_input("Company Name", company_name, key=f"name_{story_id}")
+                    updated_industry = st.text_input("Industry", industry, key=f"industry_{story_id}")
+                    updated_story = st.text_area("Success Story", story_text, height=150, key=f"story_{story_id}")
 
-                            except Exception as e:
-                                st.error(f"Error updating story: {e}")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("Update", key=f"update_{story_id}", use_container_width=True):
+                            update_query = """
+                                UPDATE STORIES 
+                                SET COMPANY_NAME = ?, 
+                                    INDUSTRY = ?, 
+                                    TEXT = ?
+                                WHERE STORY_ID = ?
+                            """
+                            updated_text = f"{updated_name} - {updated_story}"
 
-                with col2:
-                    if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
-                        delete_query = "DELETE FROM STORIES WHERE STORY_ID = ?"
-                        with st.spinner(text="Deleting story..."):
-                            try:
-                                session.sql(delete_query, params=[story_id]).collect()
-                                st.toast(f"Deleted story.", icon="🎉")
+                            with st.spinner(text="Updating story..."):
+                                try:
+                                    session.sql(update_query, params=[updated_name, updated_industry, updated_text, story_id]).collect()
+                                    st.toast(f"Updated story for '{updated_name}'!", icon="🎉")
 
-                                # Re-run Cortex Search function to update search index
-                                cortex_search_query = """
-                                    CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
-                                    ON text
-                                    ATTRIBUTES company_name, industry
-                                    WAREHOUSE = compute_wh
-                                    TARGET_LAG = '24 hours'
-                                    EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-                                    AS (
-                                        SELECT 
-                                            text,
-                                            industry,
-                                            company_name
-                                        FROM LINKEDIN.public.stories
-                                    );
-                                """
-                                session.sql(cortex_search_query).collect()
-                                st.toast("Cortex Search function successfully updated!", icon="✅")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Error deleting story: {e}")
+                                    # Re-run Cortex Search function to update search index
+                                    cortex_search_query = """
+                                        CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                                        ON text
+                                        ATTRIBUTES company_name, industry
+                                        WAREHOUSE = compute_wh
+                                        TARGET_LAG = '24 hours'
+                                        EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                                        AS (
+                                            SELECT 
+                                                text,
+                                                industry,
+                                                company_name
+                                            FROM LINKEDIN.public.stories
+                                        );
+                                    """
+                                    session.sql(cortex_search_query).collect()
+                                    st.toast("Cortex Search function successfully updated!", icon="✅")
+
+                                except Exception as e:
+                                    st.error(f"Error updating story: {e}")
+
+                    with col2:
+                        if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
+                            delete_query = "DELETE FROM STORIES WHERE STORY_ID = ?"
+                            with st.spinner(text="Deleting story..."):
+                                try:
+                                    session.sql(delete_query, params=[story_id]).collect()
+                                    st.toast(f"Deleted story.", icon="🎉")
+
+                                    # Re-run Cortex Search function to update search index
+                                    cortex_search_query = """
+                                        CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                                        ON text
+                                        ATTRIBUTES company_name, industry
+                                        WAREHOUSE = compute_wh
+                                        TARGET_LAG = '24 hours'
+                                        EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                                        AS (
+                                            SELECT 
+                                                text,
+                                                industry,
+                                                company_name
+                                            FROM LINKEDIN.public.stories
+                                        );
+                                    """
+                                    session.sql(cortex_search_query).collect()
+                                    st.toast("Cortex Search function successfully updated!", icon="✅")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Error deleting story: {e}")
 
 
 # 📌 Section: Navigation Buttons
