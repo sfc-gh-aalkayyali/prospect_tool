@@ -9,7 +9,7 @@ You are a professional assistant tasked with drafting a personalised, concise, a
 Output Requirements:
 1) Output the final email, fully polished and ready to send, with no additional explanations or placeholders.
 2) Add a subject header
-3) Make your out sound human.
+3) Make your output sound human.
 ---
 Subject: How Telstra Can Achieve 20x Marketing Conversions with AI
 

@@ -159,11 +159,11 @@ templates = session.sql(query, params=[username]).collect()
 if not templates:
     st.info("You have no templates yet.")
 else:
-    st.text_input("Search Templates", key='template_search', placeholder="Type to search...").strip().lower()
+    search = st.text_input("Search Templates", key='template_search', placeholder="Type to search...").strip().lower()
 
-    filtered_templates = [template for template in templates if st.session_state.template_search in template["NAME_OF_TEMPLATE"].lower()]
+    filtered_templates = [template for template in templates if search in template["NAME_OF_TEMPLATE"].lower()]
 
-    if st.session_state.template_search and not filtered_templates:
+    if search and not filtered_templates:
         st.warning("No templates found.")
         if st.button("Reset Search", key="reset_template_search", use_container_width=True):
             if st.session_state.template_search:
