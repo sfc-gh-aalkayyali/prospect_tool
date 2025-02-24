@@ -120,7 +120,7 @@ if st.button("Save New Template", use_container_width=True, type="primary"):
             
             try:
                 session.sql(update_query, params=[user_prompt, message_text, template_id, username]).collect()
-                st.success(f"Template '{template_name}' updated successfully.")
+                st.toast(f"Template {template_name} successfully updated!", icon="✅")
                 st.rerun()
             except Exception as e:
                 st.error(f"Error updating template: {e}")
@@ -137,7 +137,7 @@ if st.button("Save New Template", use_container_width=True, type="primary"):
 
             try:
                 session.sql(insert_query, params=[template_id, username, template_name, message_type, user_prompt, message_text, current_timestamp]).collect()
-                st.success(f"New template '{template_name}' saved successfully.")
+                st.toast(f"New template {template_name} successfully saved.", icon="🎉")
                 st.rerun()
             except Exception as e:
                 st.error(f"Error saving template: {e}")
@@ -198,8 +198,7 @@ else:
                                     template_id, 
                                     username
                                 ]).collect()
-                                
-                                st.success(f"Updated template: {updated_name}")
+                                st.toast(f"Updated Template {template_name}.", icon="🎉")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error updating template: {e}")
@@ -209,7 +208,7 @@ else:
                                 delete_query = "DELETE FROM TEMPLATES WHERE ID = ? AND USERNAME = ?"
                                 session.sql(delete_query, params=[template_id, username]).collect()
                                 
-                                st.success(f"Deleted template: {template_name}")
+                                st.toast(f"Deleted Template {template_name}.", icon="🎉")
                                 st.rerun()
                             except Exception as e:
                                 st.error(f"Error deleting template: {e}")
