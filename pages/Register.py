@@ -1,6 +1,10 @@
-from Login import *
-session = create_session()
+from functions.helper_global import *
+import os
+import hashlib
+import re
+from datetime import datetime
 init_session_state()
+session = create_session()
 
 message_types = {
     "Email": "email_prompt.txt",
@@ -10,6 +14,16 @@ message_types = {
     "Meeting": "meeting_prompt.txt",
 }
 
+def hash_value(value):
+    return hashlib.sha256(value.strip().encode()).hexdigest()
+
+def check_password_requirements(password):
+    return (
+        len(password) >= 6 and
+        re.search(r"\d", password) and
+        re.search(r"[!@#$%^&*(),.?\":{}|<>]", password)
+    )
+
 def load_prompt(file_name):
     file_path = os.path.join("prompts", file_name)
     if os.path.exists(file_path):
@@ -18,7 +32,7 @@ def load_prompt(file_name):
             return content[0].strip(), content[1].strip() if len(content) > 1 else ""
     return "", ""
 
-if not st.session_state["logged_in"]:
+if (not st.session_state["logged_in"]) or (st.session_state["logged_in"] and st.session_state["username"] == 'guest'):
     st.session_state.setdefault("snowflake", False)
 
     hide_sidebar_style = """
@@ -104,9 +118,6 @@ if not st.session_state["logged_in"]:
 
                     st.success(f"Account created! Welcome, {new_username}!")
                     st.rerun()
-        if st.button("Back to Login", use_container_width=True):
-            st.switch_page("Login.py")
-            st.rerun()
 elif st.session_state["logged_in"] and st.session_state["username"] != 'guest':
     expand_sidebar_script = """
     <script>
@@ -144,6 +155,7 @@ else:
             st.Page("pages/Home.py", title="Home"),
             st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
             st.Page("pages/Message_Generation.py", title="Message Generation"),
+            st.Page("pages/Register.py", title="Account Registration"),
         ]
     }
     pg = st.navigation(pages)

@@ -1,11 +1,8 @@
 import streamlit as st
-import time
-
 st.set_page_config(page_title="Snowflake Prospecting Tool", page_icon="🔍", layout="wide")
 
 import hashlib
 import re
-import os
 from datetime import datetime
 from functions.helper_global import *
 
@@ -13,7 +10,6 @@ session = create_session()
 init_session_state()
 
 def hash_value(value):
-    """Hashes a given value using SHA-256."""
     return hashlib.sha256(value.strip().encode()).hexdigest()
 
 def check_password_requirements(password):
@@ -94,7 +90,6 @@ if not st.session_state["logged_in"]:
                 st.warning("Please enter both username and password.")
         if st.button("Register", use_container_width=True):
             st.switch_page("pages/Register.py")
-            st.rerun()
             st.stop()
         if st.button("Continue as Guest", use_container_width=True):
             st.session_state["logged_in"] = True
@@ -204,6 +199,7 @@ else:
             st.Page("pages/Home.py", title="Home"),
             st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
             st.Page("pages/Message_Generation.py", title="Message Generation"),
+            st.Page("pages/Register.py", title="Account Registration"),
         ]
     }
     pg = st.navigation(pages)
