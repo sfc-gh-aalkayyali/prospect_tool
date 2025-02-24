@@ -1,6 +1,4 @@
 import streamlit as st
-st.set_page_config(page_title="Snowflake Prospecting Tool", page_icon="🔍", layout="wide")
-
 import hashlib
 import re
 from datetime import datetime
@@ -45,19 +43,13 @@ if "logged_in" not in st.session_state:
 if not st.session_state["logged_in"]:
     st.session_state.setdefault("snowflake", False)
 
-    hide_sidebar_style = """
-    <style>
-        [data-testid="stSidebar"] {display: none;}
-    </style>
-    """
-    st.markdown(hide_sidebar_style, unsafe_allow_html=True)
     st.markdown("<h1 style='text-align: center;'>Welcome to the Snowflake Prospecting Tool</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 16px;'>Helping AE's and SDR's send the right message, to the right person, at the right time.</p>", unsafe_allow_html=True)
     if not st.session_state.snowflake:
         st.snow()
         st.session_state.snowflake = True
         
-    padding1, content, padding2 = st.columns([25, 50, 25])
+    padding1, content, padding2 = st.columns([10, 80, 10])
     with content:
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
@@ -88,9 +80,6 @@ if not st.session_state["logged_in"]:
                     st.error("Username not found.")
             else:
                 st.warning("Please enter both username and password.")
-        if st.button("Register", use_container_width=True):
-            st.switch_page("pages/Register.py")
-            st.stop()
         if st.button("Continue as Guest", use_container_width=True):
             st.session_state["logged_in"] = True
             st.session_state["username"] = "guest"
@@ -98,6 +87,9 @@ if not st.session_state["logged_in"]:
             st.session_state["first_login"] = False
             st.success("Logged in as Guest.")
             st.rerun()
+        if st.button("Register", use_container_width=True):
+            st.switch_page("pages/Register.py")
+            st.stop()
 
     if st.session_state["failed_attempts"] >= 3:
         with content:
@@ -161,46 +153,3 @@ if not st.session_state["logged_in"]:
                             st.warning("Passwords do not match.")
                     else:
                         st.warning("Please fill in both password fields.")
-
-elif st.session_state["logged_in"] and st.session_state["username"] != 'guest':
-    expand_sidebar_script = """
-    <script>
-        let sidebar = window.parent.document.querySelector("[data-testid='stSidebar']");
-        if (sidebar) { sidebar.style.display = "block"; }
-    </script>
-    """
-    st.markdown(expand_sidebar_script, unsafe_allow_html=True)
-
-    pages = {
-        "Navigation Pages": [
-            st.Page("pages/Home.py", title="Home"),
-            st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
-            st.Page("pages/Message_Generation.py", title="Message Generation"),
-            st.Page("pages/Chat_History.py", title="Chat History"),
-            st.Page("pages/Template_Manager.py", title="Template Manager"),
-            st.Page("pages/Customer_Stories.py", title="Customer Story Manager"),
-            st.Page("pages/Battle_Cards.py", title="Battle Cards Manager"),
-        ]
-    }
-    pg = st.navigation(pages)
-    pg.run()
-
-else:
-    expand_sidebar_script = """
-    <script>
-        let sidebar = window.parent.document.querySelector("[data-testid='stSidebar']");
-        if (sidebar) { sidebar.style.display = "block"; }
-    </script>
-    """
-    st.markdown(expand_sidebar_script, unsafe_allow_html=True)
-
-    pages = {
-        "Navigation Pages": [
-            st.Page("pages/Home.py", title="Home"),
-            st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
-            st.Page("pages/Message_Generation.py", title="Message Generation"),
-            st.Page("pages/Register.py", title="Account Registration"),
-        ]
-    }
-    pg = st.navigation(pages)
-    pg.run()
