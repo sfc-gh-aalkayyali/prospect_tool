@@ -50,7 +50,7 @@ def get_connection_params():
             "schema": SNOWFLAKE_SCHEMA
         }
 
-
+@st.cache_resource
 def create_session():
     try:
         session = Session.builder.configs(get_connection_params()).create()
