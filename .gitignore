@@ -3,3 +3,5 @@
 app.zip
 __pycache__
 venv/
+Makefile
+streamlit.yaml

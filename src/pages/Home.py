@@ -34,7 +34,7 @@ with col1:
         st.subheader(":mag: Prospect Finder")
         st.write(
             "This page allows you to search for prospects, research into their industries, roles, responsibilites, and more all powered by AI.\n\n"
-            "Use filters, extract prospect linkedin profile data, query the LLM, send your profiles to Message Generation."
+            "Use filters, extract prospect linkedin profile data, query the LLM."
         )
         if st.button("Go to Prospect Finder", key="page1_btn", use_container_width=True, type="primary"):
             st.switch_page("pages/Prospect_Finder.py")

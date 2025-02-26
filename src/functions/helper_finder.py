@@ -175,8 +175,8 @@ def create_table_prompt(user_question):
     for i, r in enumerate(results, start=1):
         context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
         st.session_state.general_people.append(r[search_column])
-
-    with open("prompts/table_system_prompt.txt", "r") as file:
+    
+    with open("src/prompts/table_system_prompt.txt", "r") as file:
         system_prompt = file.read()
 
     user_prompt = f"""
@@ -213,9 +213,8 @@ def create_query_prompt(user_question):
 """
     else:
         context = ""
-
-    with open("prompts/query_system_prompt.txt", "r") as file:
-        system_prompt = file.read()
+        with open("src/prompts/query_system_prompt.txt", "r") as file:
+            system_prompt = file.read()
 
     user_prompt = f"""
 [INST]
@@ -244,8 +243,9 @@ def generate_chat_title(chat_id, username, chat_history, session=session):
         return result[0]["CHAT_TITLE"]  # Return existing title if chat exists
 
     # If no existing chat title is found, generate a new title
-    with open("prompts/chat_history_title_prompt.txt", "r") as file:
+    with open("src/prompts/chat_history_title_prompt.txt", "r") as file:
         system_prompt = file.read()
+
 
     user_prompt = f"""
 [INST]

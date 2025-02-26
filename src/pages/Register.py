@@ -25,11 +25,9 @@ def check_password_requirements(password):
     )
 
 def load_prompt(file_name):
-    file_path = os.path.join("prompts", file_name)
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read().strip().split("---")
-            return content[0].strip(), content[1].strip() if len(content) > 1 else ""
+    with open(f"src/prompts/{file_name}", "r") as f:
+        content = f.read().strip().split("---")
+        return content[0].strip(), content[1].strip() if len(content) > 1 else ""
     return "", ""
 
 if (not st.session_state["logged_in"]) or (st.session_state["logged_in"] and st.session_state["username"] == 'guest'):

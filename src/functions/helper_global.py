@@ -201,7 +201,7 @@ def get_general_chat_history():
 def make_chat_history_summary(chat_history, question):
 
     if chat_history: 
-        with open("prompts/chat_history_prompt.txt", "r") as file:
+        with open("src/prompts/chat_history_prompt.txt", "r") as file:
             system_prompt = file.read()
 
         user_prompt = f"""
