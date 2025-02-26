@@ -44,7 +44,7 @@ with col2:
         st.subheader(":speech_balloon: Message Generation")
         st.write(
             "This page allows you to generate automated outreach emails, meeting notes, linkedin messages, and more all powered by AI. \n\n"
-            "Choose profiles, customer success stories, and add your personalized messages."
+            "Choose profiles, customer success stories, add your personalized messages."
         )
         if st.button("Go to Message Generation", key="page2_btn", use_container_width=True, type="primary"):
             st.switch_page("pages/Message_Generation.py")
