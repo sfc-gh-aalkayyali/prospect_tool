@@ -194,6 +194,7 @@ def create_table_prompt(user_question):
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
     return prompt
 
+
 def create_query_prompt(user_question):
     if st.session_state.use_chat_history:
         history = make_chat_history_summary(get_general_chat_history(), user_question)
@@ -213,8 +214,9 @@ def create_query_prompt(user_question):
 """
     else:
         context = ""
-        with open("src/prompts/query_system_prompt.txt", "r") as file:
-            system_prompt = file.read()
+        
+    with open("src/prompts/query_system_prompt.txt", "r") as file:
+        system_prompt = file.read()
 
     user_prompt = f"""
 [INST]
