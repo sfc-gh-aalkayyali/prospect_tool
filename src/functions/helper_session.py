@@ -61,7 +61,6 @@ def create_session():
         session = Session.builder.config("connection_name", "my_conn").create()
         session.sql("USE DATABASE LINKEDIN").collect()
     return session
-
 # @st.cache_resource
 # def create_session():
 #     ### creating session for Streamlit in Snowflake (SiS)

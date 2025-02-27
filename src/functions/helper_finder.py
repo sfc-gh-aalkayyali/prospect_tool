@@ -28,7 +28,6 @@ def init_config_options_finder():
     )
         st.slider(
             "Temperature/Creativity",
-            value=0.5,
             key="temperature",
             step=0.1,
             min_value=0.0,
@@ -39,7 +38,6 @@ Temperature is a scaling factor applied to the predicted probabilities of tokens
         
         st.slider(
             "Top_p/Creativity",
-            value=0.0,
             key="top_p",
             step=0.1,
             min_value=0.0,
@@ -55,9 +53,8 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
                 st.markdown(st.session_state.general_chat_history)
 
 def table_complete_function(prompt):
-    prompt_json = json.dumps(prompt)
 
-    response = Complete(model="llama3.1-70b", prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
+    response = Complete(model="deepseek-r1", prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
     response = response.strip()
 
     if response.startswith("No profiles returned.") or response.startswith("An error occurred:"):
@@ -230,6 +227,8 @@ def create_query_prompt(user_question):
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
     return prompt
 
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
 def generate_chat_title(chat_id, username, chat_history, session=session):
     if len(chat_history) == 0: 
@@ -262,7 +261,7 @@ def generate_chat_title(chat_id, username, chat_history, session=session):
         {"role": "user", "content": user_prompt}
     ]
 
-    return Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=0.0, top_p=0.0), session=session)
+    return remove_think_tags(Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=0.0, top_p=0.0), session=session))
 
 def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summary, session=session):
     if not chat_history:

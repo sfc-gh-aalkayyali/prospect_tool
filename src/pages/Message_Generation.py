@@ -307,9 +307,10 @@ else:
                 if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
                     with st.spinner("Generating messages..."):
                         generated_messages = {
-                            f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
+                            f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()), "deepseek-r1")
                             for _, row in selected_profiles_df.iterrows()
                         }
+                        generated_messages = remove_think_tags(generated_messages)
                         st.session_state.generated_messages = generated_messages
                 else:
                     st.warning("Please input a prompt and sample message to generate messages.")

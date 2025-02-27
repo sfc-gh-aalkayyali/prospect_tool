@@ -45,6 +45,9 @@ init_service_metadata()
 search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles", help="If toggle is on it will activate Cortex Search to retrieve profiles when you query the chatbot. Conversely, if it is off you can query the LLM without retrieving profiles.")
 
 if search_profile_toggle:
+    st.session_state.temperature = 0.1
+    st.session_state.top_p = 0.9
+
     classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
     classifications = classifications.dropna().loc[classifications['CLASSIFICATION'].str.strip() != '']
 
@@ -110,6 +113,13 @@ if search_profile_toggle:
                 for i, person in enumerate(formatted_people, start=1):
                     st.markdown(f"**Option {i}:**<br>{person}", unsafe_allow_html=True)
                     st.write("---")
+else:
+    st.session_state.temperature = 0.5
+    st.session_state.top_p = 0.9
+    st.session_state.model = 'deepseek-r1'
+
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
 init_config_options_finder()
 if st.sidebar.button("Clear Conversation", use_container_width=True, type="secondary"):
@@ -169,9 +179,11 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
                     generated_response = table_complete_function(create_table_prompt(st.session_state.selected_prompt))
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
+                    generated_response = remove_think_tags(generated_response)
             else:
                 try:
-                    generated_response = complete_function(create_query_prompt(st.session_state.selected_prompt))
+                    generated_response = complete_function(create_query_prompt(st.session_state.selected_prompt), "deepseek-r1")
+                    generated_response = remove_think_tags(generated_response)
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
 
@@ -326,11 +338,13 @@ if question:
             if search_profile_toggle:
                 try:
                     generated_response = table_complete_function(create_table_prompt(question))
+                    generated_response = remove_think_tags(generated_response)
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
             else:
                 try:
-                    generated_response = complete_function(create_query_prompt(question))
+                    generated_response = complete_function(create_query_prompt(question), "deepseek-r1")
+                    generated_response = remove_think_tags(generated_response)
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
 

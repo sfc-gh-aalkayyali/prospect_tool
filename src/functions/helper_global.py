@@ -6,6 +6,7 @@ import streamlit as st
 import json
 import uuid
 import io
+import re
 import time
 from snowflake.cortex import Complete, CompleteOptions
 
@@ -43,7 +44,9 @@ def init_session_state():
         ("battle_card_industry", []),
         ("battle_card_company", []),
         ("customer_battle_cards", []),
-        ("selected_battle_cards", [])]:
+        ("selected_battle_cards", []),
+        ("temperature", 0.5),
+        ("top_p", 0.9)]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             
@@ -159,6 +162,9 @@ def query_battle_cards_cortex_search_service(query):
     search_col = service_metadata.get("battlecard")
     return results, search_col
 
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+
 def query_stories_cortex_search_service(query):
     db, schema = session.get_current_database(), session.get_current_schema()
 
@@ -215,7 +221,7 @@ def make_chat_history_summary(chat_history, question):
 [/INST]
         """
         prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-        summary = complete_function(prompt)
+        summary = remove_think_tags(complete_function(prompt, "llama3.1-70b"))
         st.session_state.general_chat_history = summary
     else:
         summary = ""
@@ -234,9 +240,12 @@ def text_download(text):
 
     return text_bytesio
 
-def complete_function(prompt):
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
-    response = Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+def complete_function(prompt, input_model):
+
+    response = Complete(model=input_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
     return response  
 
