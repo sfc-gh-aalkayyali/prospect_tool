@@ -235,8 +235,9 @@ def text_download(text):
     return text_bytesio
 
 def complete_function(prompt):
+    prompt_json = json.dumps(prompt)
 
-    response = Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    response = Complete(model="llama3.1-70b", prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
     return response  
 
