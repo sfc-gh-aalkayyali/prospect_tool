@@ -46,7 +46,8 @@ def init_session_state():
         ("customer_battle_cards", []),
         ("selected_battle_cards", []),
         ("temperature", 0.5),
-        ("top_p", 0.9)]:
+        ("top_p", 0.9),
+        ("generated_profiles", [])]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             
@@ -221,7 +222,7 @@ def make_chat_history_summary(chat_history, question):
 [/INST]
         """
         prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-        summary = remove_think_tags(complete_function(prompt, "llama3.1-70b"))
+        summary = complete_function(prompt)
         st.session_state.general_chat_history = summary
     else:
         summary = ""
@@ -243,11 +244,11 @@ def text_download(text):
 def remove_think_tags(text):
     return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
-def complete_function(prompt, input_model):
+def complete_function(prompt):
 
-    response = Complete(model=input_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
-    return response  
+    return remove_think_tags(response)
 
 def logout():
     st.session_state.clear()
