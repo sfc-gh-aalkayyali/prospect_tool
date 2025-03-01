@@ -3,9 +3,9 @@ from functions.helper_session import *
 from snowflake.core import Root
 import pandas as pd
 import streamlit as st
-import json
 import uuid
 import io
+import re
 import time
 from snowflake.cortex import Complete, CompleteOptions
 
@@ -43,7 +43,10 @@ def init_session_state():
         ("battle_card_industry", []),
         ("battle_card_company", []),
         ("customer_battle_cards", []),
-        ("selected_battle_cards", [])]:
+        ("selected_battle_cards", []),
+        ("temperature", 0.5),
+        ("top_p", 0.9),
+        ("generated_profiles", [])]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             
@@ -159,6 +162,9 @@ def query_battle_cards_cortex_search_service(query):
     search_col = service_metadata.get("battlecard")
     return results, search_col
 
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+
 def query_stories_cortex_search_service(query):
     db, schema = session.get_current_database(), session.get_current_schema()
 
@@ -234,12 +240,15 @@ def text_download(text):
 
     return text_bytesio
 
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+
 def complete_function(prompt):
     prompt_json = json.dumps(prompt)
 
-    response = Complete(model="llama3.1-70b", prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
-    return response  
+    return remove_think_tags(response)
 
 def logout():
     st.session_state.clear()

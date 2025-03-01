@@ -52,6 +52,8 @@ user_templates = session.sql(f"""
 
 st.title(":speech_balloon: Message Generation")
 st.markdown("---")
+st.session_state.temperature = 0.7
+st.session_state.top_p = 0.9
 
 if user_templates.shape[0] == 0 and username != 'guest':
     st.warning("Please create message templates before using this feature.")
@@ -105,7 +107,6 @@ else:
             st.rerun()
         
         st.markdown("### Profile Selection")
-        people_df['Full Name'] = people_df['First Name'] + " " + people_df['Last Name']
         people_df = people_df.drop_duplicates(subset=['Full Name'])
 
         selected_names = st.multiselect("Select Profiles:", people_df['Full Name'].tolist(), default=st.session_state.profile_selection)
@@ -193,7 +194,7 @@ else:
                 if st.session_state.customer_battle_cards and st.session_state.customer_battle_cards != []:
                     del st.session_state.customer_battle_cards
                     st.session_state.customer_battle_cards = []
-                    
+
                 if st.session_state.battle_cards_search and st.session_state.battle_cards_search.strip() != '':
                     results, search_column = query_battle_cards_cortex_search_service(
                         st.session_state.battle_cards_search
@@ -307,9 +308,9 @@ else:
 
             if st.button("Generate Messages", type="primary", use_container_width=True):
                 if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
-                    with st.spinner("Generating messages..."):
+                    with st.spinner("Generating messages...",  show_time=True):
                         generated_messages = {
-                            f"{row['First Name']} {row['Last Name']}": complete_function(create_direct_message(row.to_dict()))
+                            f"{row['Full Name']}": complete_function(create_direct_message(row.to_dict()))
                             for _, row in selected_profiles_df.iterrows()
                         }
                         st.session_state.generated_messages = generated_messages

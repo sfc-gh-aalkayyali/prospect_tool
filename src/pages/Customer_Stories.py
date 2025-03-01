@@ -75,7 +75,7 @@ if st.button("Save Customer Story", use_container_width=True, type='primary'):
         """
         params = (customer_industry, f"{customer_name} - {customer_story}", username, datetime.now(), customer_name, story_id)
 
-        with st.spinner(text="In progress..."):
+        with st.spinner(text="In progress...",  show_time=True):
             try:
                 session.sql(insert_query, params=params).collect()
                 st.toast(f"Customer Story for '{customer_name}' added!", icon="🎉")
@@ -97,6 +97,13 @@ if st.button("Save Customer Story", use_container_width=True, type='primary'):
                 """
                 session.sql(cortex_search_query).collect()
                 st.toast("Cortex Search function successfully updated!", icon="✅")
+                del st.session_state.company_name
+                st.session_state.company_name = ''
+                del st.session_state.customer_story
+                st.session_state.customer_story = ''
+                del st.session_state.company_industry
+                st.session_state.company_industry = ''
+                st.rerun()
                 
             except Exception as e:
                 st.error(f"Error saving template: {e}")
@@ -156,7 +163,7 @@ else:
                             """
                             updated_text = f"{updated_name} - {updated_story}"
 
-                            with st.spinner(text="Updating story..."):
+                            with st.spinner(text="Updating story...",  show_time=True):
                                 try:
                                     session.sql(update_query, params=[updated_name, updated_industry, updated_text, story_id]).collect()
                                     st.toast(f"Updated story for '{updated_name}'!", icon="🎉")
@@ -186,7 +193,7 @@ else:
                     with col2:
                         if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
                             delete_query = "DELETE FROM STORIES WHERE STORY_ID = ?"
-                            with st.spinner(text="Deleting story..."):
+                            with st.spinner(text="Deleting story...",  show_time=True):
                                 try:
                                     session.sql(delete_query, params=[story_id]).collect()
                                     st.toast(f"Deleted story.", icon="🎉")

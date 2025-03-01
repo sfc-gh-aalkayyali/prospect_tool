@@ -13,11 +13,14 @@ def init_config_options_finder():
 
     with st.sidebar.expander("LLM Options"):
         st.toggle("Use chat history", key="use_chat_history", value=True)
-        # st.selectbox(
-        #     "Select LLM Model",
-        #     ("llama3.1-70b", "mistral-large2"),
-        #     key="selected_model", help="*It is recommended to choose llama3.1-70*"
-        # )
+
+        # Selectbox using session state
+        st.selectbox(
+            "Select LLM Model",
+            ("llama3.1-70b", "deepseek-r1"),
+            key="selected_model"
+        )
+
         st.slider(
         "Select number of messages to use in chat history",
         value=5,
@@ -28,8 +31,7 @@ def init_config_options_finder():
     )
         st.slider(
             "Temperature/Creativity",
-            value=0.5,
-            key="temperature",
+            value=st.session_state.temperature,
             step=0.1,
             min_value=0.0,
             max_value=1.0,
@@ -39,9 +41,8 @@ Temperature is a scaling factor applied to the predicted probabilities of tokens
         
         st.slider(
             "Top_p/Creativity",
-            value=0.0,
-            key="top_p",
             step=0.1,
+            value=st.session_state.top_p,
             min_value=0.0,
             max_value=1.0,
             help=f"""*Higher Top_p will result in a wider range of words considered, leading to more varied results. Conversely lower top_p leads to a narrower range of words considered, focusing on the most likely options. 
@@ -55,49 +56,74 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
                 st.markdown(st.session_state.general_chat_history)
 
 def table_complete_function(prompt):
-    prompt_json = json.dumps(prompt)
-
-    response = Complete(model="llama3.1-70b", prompt=prompt_json, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)    
+    response = remove_think_tags(Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session))
     response = response.strip()
-
-    if response.startswith("No profiles returned.") or response.startswith("An error occurred:"):
+    if response.startswith("I don't know the answer to that question.") or response.startswith("An error occurred:"):
         return response
 
+    print(response)
+
     # Split individual profiles
-    profiles = re.split(r"\n\s*---\s*\n", response)
+    profiles = re.split(r" \| ", response)
 
-    # Extract fields from each profile
-    data = [extract_fields(profile) for profile in profiles]
+    placeholders = ", ".join(["?"] * len(profiles))
+    # Correct SQL query using parameterized binding
+    query = f"""
+        SELECT * FROM LINKEDIN.PUBLIC."LinkedIn Accounts" 
+        WHERE UNIQUE_ID IN ({placeholders})
+    """
 
-    # Convert to DataFrame
-    df = pd.DataFrame(data).fillna('')
+    # Execute query with parameter binding (passing the list correctly)
+    df = session.sql(query, params=profiles).to_pandas()
 
+    df = df[[
+    "FULLNAME", "COMPANYNAME", "INDUSTRY", "TITLE",  
+    "CLEANED_CLASSIFICATION", "LOCATION", "TITLEDESCRIPTION", 
+    "SUMMARY", "LINKEDINPROFILEURL", "DURATIONINROLE", 
+    "DURATIONINCOMPANY", "CONNECTIONDEGREE", "SHAREDCONNECTIONSCOUNT", 
+    "TIMESTAMP"
+]].rename(columns={
+    "FULLNAME": "Full Name",
+    "COMPANYNAME": "Company Name",
+    "INDUSTRY": "Industry",
+    "TITLE": "Job Title",
+    "CLEANED_CLASSIFICATION": "Classification",
+    "LOCATION": "Location",
+    "TITLEDESCRIPTION": "Job Description",
+    "SUMMARY": "Profile Summary",
+    "LINKEDINPROFILEURL": "LinkedIn URL",
+    "DURATIONINROLE": "Duration In Role",
+    "DURATIONINCOMPANY": "Duration At Company",
+    "CONNECTIONDEGREE": "Connection Degree",
+    "SHAREDCONNECTIONSCOUNT": "Shared Connections",
+    "TIMESTAMP": "Data Timestamp"
+})
     return df
 
-FIELD_PATTERNS = {
-    "First Name": re.compile(r"First Name:\s*(.+)"),
-    "Last Name": re.compile(r"Last Name:\s*(.+)"),
-    "Location": re.compile(r"Location:\s*(.+)"),
-    "Shared Connections": re.compile(r"Shared Connections:\s*(\d+)"),
-    "Title": re.compile(r"Title:\s*(.+)"),
-    "Classification": re.compile(r"Classification:\s*(.+?)(?:\n|$)"),
-    "Company": re.compile(r"Company:\s*(.+)"),
-    "Industry": re.compile(r"Industry:\s*(.+)"),
-    "Connection Degree": re.compile(r"Connection Degree:\s*(.+)"),
-    "Duration in Role": re.compile(r"Duration in Role:\s*(.+?)\s+in role"),
-    "Duration in Company": re.compile(r"Duration in Company:\s*(.+)"),
-    "LinkedIn Profile URL": re.compile(r"LinkedIn Profile URL:\s*(.+)"),
-    "Title Description": re.compile(r"Title Description:\s*(.+)"),
-    "Summary": re.compile(r"Summary:\s*(.+)")
-}
+# FIELD_PATTERNS = {
+#     "First Name": re.compile(r"First Name:\s*(.+)"),
+#     "Last Name": re.compile(r"Last Name:\s*(.+)"),
+#     "Location": re.compile(r"Location:\s*(.+)"),
+#     "Shared Connections": re.compile(r"Shared Connections:\s*(\d+)"),
+#     "Title": re.compile(r"Title:\s*(.+)"),
+#     "Classification": re.compile(r"Classification:\s*(.+?)(?:\n|$)"),
+#     "Company": re.compile(r"Company:\s*(.+)"),
+#     "Industry": re.compile(r"Industry:\s*(.+)"),
+#     "Connection Degree": re.compile(r"Connection Degree:\s*(.+)"),
+#     "Duration in Role": re.compile(r"Duration in Role:\s*(.+?)\s+in role"),
+#     "Duration in Company": re.compile(r"Duration in Company:\s*(.+)"),
+#     "LinkedIn Profile URL": re.compile(r"LinkedIn Profile URL:\s*(.+)"),
+#     "Title Description": re.compile(r"Title Description:\s*(.+)"),
+#     "Summary": re.compile(r"Summary:\s*(.+)")
+# }
 
-def extract_fields(profile):
-    extracted = {}
-    for field, pattern in FIELD_PATTERNS.items():
-        match = pattern.search(profile)
-        if match:
-            extracted[field] = match.group(1).strip()
-    return extracted
+# def extract_fields(profile):
+#     extracted = {}
+#     for field, pattern in FIELD_PATTERNS.items():
+#         match = pattern.search(profile)
+#         if match:
+#             extracted[field] = match.group(1).strip()
+#     return extracted
 
 def convert_to_int(value):
     """Converts numeric strings to integers, handling missing or invalid values."""
@@ -173,7 +199,7 @@ def create_table_prompt(user_question):
     context_str = ""
     st.session_state.general_people = []
     for i, r in enumerate(results, start=1):
-        context_str += f"Context document {i}: {r[search_column]} \n" + "\n"
+        context_str += f"<profile {i}>Context document {i}: {r[search_column]}</profile {i}>\n\n"
         st.session_state.general_people.append(r[search_column])
     
     with open("src/prompts/table_system_prompt.txt", "r") as file:
@@ -182,12 +208,10 @@ def create_table_prompt(user_question):
     user_prompt = f"""
 [INST]
 {chat_history}
-<profile>
-{context_str}
-</profile>
 <question>
 {user_question}
 </question>
+{context_str}
 [/INST]
 """.strip()
     
@@ -206,10 +230,10 @@ def create_query_prompt(user_question):
     else:
         chat_history = ""
 
-    if st.session_state.general_people:
+    if st.session_state.generated_profiles and st.session_state.generated_profiles != []:
         context = f"""
 <profile>
-{st.session_state.general_people}
+{st.session_state.generated_profiles}
 </profile>
 """
     else:
@@ -230,6 +254,8 @@ def create_query_prompt(user_question):
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
     return prompt
 
+def remove_think_tags(text):
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
 def generate_chat_title(chat_id, username, chat_history, session=session):
     if len(chat_history) == 0: 

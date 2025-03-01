@@ -58,19 +58,19 @@ st.markdown("### Create a New Battlecard")
 
 cols2 = st.columns(2)
 with cols2[0]:
-    battlecard_name = st.text_input("Comeptitor Company Name", placeholder="e.g., Databricks, Redshift...")
+    battlecard_name = st.text_input("Comeptitor Company Name", placeholder="e.g., Databricks, Redshift...", key='battlecard_name')
 
 with cols2[1]:
-    battlecard_industry = st.text_input("Comeptitor Company Industry", placeholder="e.g., Telecommunications...")
+    battlecard_industry = st.text_input("Comeptitor Company Industry", placeholder="e.g., Telecommunications...", key='battlecard_industry')
   
 cols = st.columns(2)
 with cols[0]:
-    battlecard_strengths = st.text_area("Strengths", height=100, placeholder="List the key strengths...")
+    battlecard_strengths = st.text_area("Strengths", height=100, placeholder="List the key strengths...", key="battlecard_strength")
 
 with cols[1]:
-    battlecard_weaknesses = st.text_area("Weaknesses", height=100, placeholder="List the weaknesses...")
+    battlecard_weaknesses = st.text_area("Weaknesses", height=100, placeholder="List the weaknesses...", key="battlecard_weakness")
 
-battlecard_snowflake_response = st.text_area("Snowflake Response", height=100, placeholder="How does Snowflake compare?")
+battlecard_snowflake_response = st.text_area("Snowflake Response", height=100, placeholder="How does Snowflake compare?", key="battlecard_response")
 
 submitted = st.button("Save Battlecard", use_container_width=True, type='primary')
 
@@ -123,7 +123,17 @@ Competitor Name: {battlecard_name}
             """
             session.sql(cortex_search_query).collect()
             st.toast("Cortex Search function successfully updated!", icon="✅")
-            
+            del st.session_state.battlecard_name
+            st.session_state.battlecard_name = ''
+            del st.session_state.battlecard_industry
+            st.session_state.battlecard_industry = ''
+            del st.session_state.battlecard_strength
+            st.session_state.battlecard_strength = ''
+            del st.session_state.battlecard_weakness
+            st.session_state.battlecard_weakness = ''
+            del st.session_state.battlecard_response
+            st.session_state.battlecard_response = ''
+            st.rerun()
         except Exception as e:
             st.error(f"Error saving template: {e}")
 
@@ -172,7 +182,7 @@ else:
                                     TEXT = ?
                                 WHERE BATTLE_CARD_ID = ?
                             """
-                            with st.spinner(text="Updating battlecard..."):
+                            with st.spinner(text="Updating battlecard...", show_time=True):
                                 try:
                                     session.sql(update_query, params=[updated_name, updated_info, battlecard_id]).collect()
                                     st.toast(f"Updated Battle Card for {updated_name}.", icon="🎉")
@@ -205,7 +215,7 @@ else:
                     with col2:
                         if st.button("Delete", key=f"delete_{battlecard_id}", use_container_width=True):
                             delete_query = "DELETE FROM BATTLECARDS WHERE BATTLE_CARD_ID = ?"
-                            with st.spinner(text="Deleting battlecard..."):
+                            with st.spinner(text="Deleting battlecard...",  show_time=True):
                                 try:
                                     session.sql(delete_query, params=[battlecard_id]).collect()
                                     st.toast(f"Deleted Battle Card.", icon="🎉")

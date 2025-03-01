@@ -5,6 +5,8 @@ import pandas as pd
 from datetime import datetime
 import uuid
 from functions.helper_session import *
+from st_aggrid import AgGrid, GridOptionsBuilder
+
 
 init_session_state()
 cols = st.columns([85,15])
@@ -45,6 +47,15 @@ init_service_metadata()
 search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles", help="If toggle is on it will activate Cortex Search to retrieve profiles when you query the chatbot. Conversely, if it is off you can query the LLM without retrieving profiles.")
 
 if search_profile_toggle:
+    if st.session_state.temperature:
+        del st.session_state.temperature
+        st.session_state.temperature = 0.0
+    
+    if st.session_state.top_p:
+        del st.session_state.top_p
+        st.session_state.top_p = 1.0
+    st.session_state.model = 'llama3.1-70b'
+
     classifications = session.sql('SELECT DISTINCT CLASSIFICATION FROM LINKEDIN.PUBLIC."LinkedIn Accounts Cortext"').to_pandas()
     classifications = classifications.dropna().loc[classifications['CLASSIFICATION'].str.strip() != '']
 
@@ -110,6 +121,9 @@ if search_profile_toggle:
                 for i, person in enumerate(formatted_people, start=1):
                     st.markdown(f"**Option {i}:**<br>{person}", unsafe_allow_html=True)
                     st.write("---")
+else:
+    st.session_state.temperature = 0.5
+    st.session_state.top_p = 1.0
 
 init_config_options_finder()
 if st.sidebar.button("Clear Conversation", use_container_width=True, type="secondary"):
@@ -167,7 +181,7 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
     st.session_state.general_messages.append({"role": "user", "content": st.session_state.selected_prompt})
 
     with st.chat_message("assistant", avatar=icons["assistant"]):
-        with st.spinner("Thinking..."):
+        with st.spinner("Thinking...",  show_time=True):
             if search_profile_toggle:
                 try:
                     generated_response = table_complete_function(create_table_prompt(st.session_state.selected_prompt))
@@ -192,123 +206,85 @@ general_table_index = 1
 for index, message in enumerate(st.session_state.general_messages):
     with st.chat_message(message["role"], avatar=icons[message["role"]]):
         if isinstance(message["content"], pd.DataFrame):
+
+            dataframe = message["content"].copy()
+
+            # Create GridOptions
+            gb = GridOptionsBuilder.from_dataframe(dataframe)
+
+            # Enable sorting and resizing globally
+            gb.configure_default_column(sortable=True, resizable=True, wrapText=True, autoHeight=True)
+
+            # Enable filtering for specific columns
+            filterable_columns = [
+                "Full Name",
+                "Company Name",
+                "Industry",
+                "Job Title",
+                "Classification",
+                "Location",
+                "Duration In Role",
+                "Duration At Company",
+                "Connection Degree",
+                "Shared Connections"
+            ]
+
+            for col in filterable_columns:
+                if col in dataframe.columns:
+                    gb.configure_column(col, filterable=True, filter="agSetColumnFilter")  # Enables dropdown-based filter
+
+
+            # Enable word wrapping for text-heavy columns
+            expandable_columns = ["Profile Summary", "Job Description"]
+            for col in expandable_columns:
+                gb.configure_column(
+                    col,
+                    editable=True, 
+                    cellEditor="agLargeTextCellEditor", 
+                    cellEditorPopup=True,
+                    width=200,  # Strict column width
+                    maxWidth=200,  # Prevents column from stretching
+                    minWidth=200,  # Ensures consistency
+                    cellStyle={'overflow': 'hidden', 'textOverflow': 'ellipsis', 'whiteSpace': 'nowrap'}
+                )
+            # Enable pagination
+            grid_options = gb.build()
         
-            df = message["content"]
-            # filtered_df = df.copy()
+            # Display the AgGrid
+            row_height = 40  # Approximate row height in pixels
+            max_visible_rows = min(len(dataframe), 10)  # Show up to 10 rows by default
+            dynamic_height = max(200, max_visible_rows * row_height)  # Minimum height of 200px
 
-            available_columns = df.columns.tolist()
+            grid_response = AgGrid(dataframe, 
+                gridOptions=grid_options, 
+                height=dynamic_height,  # Apply dynamic height
+                enable_enterprise_modules=True, 
+                pagination=True, 
+                paginationPageSize=20)
+            
+            filtered_df = pd.DataFrame(grid_response['data'])
 
-            st.session_state.general_profiles = pd.concat([st.session_state.general_profiles, df], ignore_index=True)
-            filtered_df = df.copy()
+            if st.session_state.generated_profiles:
+                del st.session_state.generated_profiles
+                st.session_state.generated_profiles = []
 
-            with st.sidebar.expander(f"Filter Table {general_table_index}"):
-                unique_key_prefix = f"general_filter_{general_table_index}"
+            st.session_state.generated_profiles.extend(filtered_df.to_dict(orient="records"))
 
-                if "Title" in available_columns:
-                    filter_title = st.multiselect(
-                        "Title", df["Title"].unique(), 
-                        default=df["Title"].unique(), 
-                        key=f"{unique_key_prefix}_title"
-                    )
-                    filtered_df = filtered_df[filtered_df["Title"].isin(filter_title)]
-
-                if "Classification" in available_columns:
-                    filter_classification = st.multiselect(
-                        "Classification", df["Classification"].unique(), 
-                        default=df["Classification"].unique(), 
-                        key=f"{unique_key_prefix}_classification"
-                    )
-                    filtered_df = filtered_df[filtered_df["Classification"].isin(filter_classification)]
-
-                if "Company" in available_columns:
-                    filter_company = st.multiselect(
-                        "Company", df["Company"].unique(), 
-                        default=df["Company"].unique(), 
-                        key=f"{unique_key_prefix}_company"
-                    )
-                    filtered_df = filtered_df[filtered_df["Company"].isin(filter_company)]
-
-                if "Location" in available_columns:
-                    filter_location = st.multiselect(
-                        "Location", df["Location"].unique(), 
-                        default=df["Location"].unique(), 
-                        key=f"{unique_key_prefix}_location"
-                    )
-                    filtered_df = filtered_df[filtered_df["Location"].isin(filter_location)]
-
-                if "Industry" in available_columns:
-                    filter_industry = st.multiselect(
-                        "Industry", df["Industry"].unique(), 
-                        default=df["Industry"].unique(), 
-                        key=f"{unique_key_prefix}_industry"
-                    )
-                    filtered_df = filtered_df[filtered_df["Industry"].isin(filter_industry)]
-
-                if "Connection Degree" in available_columns:
-                    filter_connection_degree = st.multiselect(
-                        "Connection Degree", df["Connection Degree"].unique(), 
-                        default=df["Connection Degree"].unique(), 
-                        key=f"{unique_key_prefix}_connection_degree"
-                    )
-                    filtered_df = filtered_df[filtered_df["Connection Degree"].isin(filter_connection_degree)]
-
-                if "Shared Connections" in available_columns:
-                    filtered_df["Shared Connections"] = filtered_df["Shared Connections"].apply(convert_to_int)
-                    min_shared, max_shared = get_slider_range(filtered_df, "Shared Connections")
-                    filter_shared_connections = st.slider(
-                        "Shared Connections", min_value=min_shared, max_value=max_shared, 
-                        value=(min_shared, max_shared), key=f"{unique_key_prefix}_shared_connections"
-                    )
-                    filtered_df = filtered_df[filtered_df["Shared Connections"].between(filter_shared_connections[0], filter_shared_connections[1])]
-
-                if "Duration in Role" in available_columns:
-                    filtered_df["Months in Role"] = filtered_df["Duration in Role"].apply(convert_duration_to_months)
-                    min_role_duration, max_role_duration = get_slider_range(filtered_df, "Months in Role")
-                    filter_duration_role = st.slider(
-                        "Duration in Role (Months)", min_value=min_role_duration, max_value=max_role_duration, 
-                        value=(min_role_duration, max_role_duration), key=f"{unique_key_prefix}_duration_role"
-                    )
-                    filtered_df = filtered_df[filtered_df["Months in Role"].between(filter_duration_role[0], filter_duration_role[1])]
-
-                if "Duration in Company" in available_columns:
-                    filtered_df["Months in Company"] = filtered_df["Duration in Company"].apply(convert_duration_to_months)
-                    min_company_duration, max_company_duration = get_slider_range(filtered_df, "Months in Company")
-                    filter_duration_company = st.slider(
-                        "Duration in Company (Months)", min_value=min_company_duration, max_value=max_company_duration, 
-                        value=(min_company_duration, max_company_duration), key=f"{unique_key_prefix}_duration_company"
-                    )
-                    filtered_df = filtered_df[filtered_df["Months in Company"].between(filter_duration_company[0], filter_duration_company[1])]
-
-            # 🔹 Display Filtered DataFrame
-            st.dataframe(
-                filtered_df, 
-                hide_index=True,
-                use_container_width=True,
-                column_order=[col for col in [
-                    "First Name",
-                    "Last Name",
-                    "Title",
-                    "Classification",
-                    "Location",
-                    "Company",
-                    "Industry",
-                    "Connection Degree",
-                    "Shared Connections",
-                    "Duration in Role",
-                    "Duration in Company",
-                    "Title Description",
-                    "Summary",
-                    "LinkedIn Profile URL",
-                ] if col in filtered_df.columns.tolist()]
+            if st.button(f"Send Profiles to Message Generation", key=f"general_generate_messages_{general_table_index}"):
+                if not filtered_df.empty and "Full Name" in filtered_df.columns:
+                    st.session_state.profile_selection = filtered_df["Full Name"].tolist()
+                    st.session_state.general_profiles = filtered_df  # Ensure the full profile data is stored
+                    st.success(f"Successfully sent {len(filtered_df)} profiles to Message Generator")
+                    st.switch_page("pages/Message_Generation.py")
+                else:
+                    st.warning("No profiles selected or data missing!")
+            csv_data = filtered_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label=f"Download Table {general_table_index}",
+                data=csv_data,
+                file_name=f"filtered_profiles_{general_table_index}_{datetime.now()}.csv",
+                mime="text/csv"
             )
-
-            if st.button(f"Send Profiles from Table {general_table_index} to Message Generation", key=f"general_generate_messages_{general_table_index}"):
-                filtered_df['Full Name'] = filtered_df['First Name'] + " " + filtered_df['Last Name']
-                people_df = filtered_df.drop_duplicates(subset=['Full Name'])
-                st.session_state.profile_selection = people_df['Full Name'].tolist()
-                st.success(f"Successfully Added Profiles from Table {general_table_index} to Message Generator")
-                st.switch_page("pages/Message_Generation.py")
-
             general_table_index += 1
         else:
             st.markdown(message["content"])
@@ -326,7 +302,7 @@ if question:
         st.markdown(question)
 
     with st.chat_message("assistant", avatar=icons["assistant"]):
-        with st.spinner("Thinking..."):
+        with st.spinner("Thinking...",  show_time=True):
             if search_profile_toggle:
                 try:
                     generated_response = table_complete_function(create_table_prompt(question))
