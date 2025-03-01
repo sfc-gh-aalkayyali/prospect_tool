@@ -82,6 +82,70 @@ with st.expander(label="How does Message Generation Work?"):
         "   - Generate and download your messages.\n"
     )
 
+with st.expander(label="How does Chat History Work?"):
+    st.write("---")
+    st.markdown(
+        "To use Chat History, you must have previously searched for profiles from the Prospect Finder page.\n\n"
+        "1. **Select a Saved Chat**\n"
+        "   - Select one your previous chats from the drop down to view.\n"
+        "2. **View Selected Saved Chat**\n"
+        "   - View your saved chat.\n"
+        "   - Continue your chat where you left off by clicking on the 'Continue Chat' button.\n" 
+    )
+
+with st.expander(label="How does Template Manager Work?"):
+    st.write("---")
+    st.markdown(
+        "This page allows you to manage templates to use for message generation.\n"
+        "You can create, delete, or modify your templates and use them in the 'Message Generation' page.\n"
+        "By default, each new account will have an email, call, meeting, linkedin, and text message template.\n"
+        "Only you will be able to see your templates, no other user can access these.\n"
+        "1. **Create a New Template**\n"
+        "   - Select the type of template you want to create, for example email, text, linkedin, etc..\n"
+        "   - Customize the system prompt, this will direct the LLM on how to structure its output, please follow the guidelines by hovering over the '?' icon to the right of the textbox.\n"
+        "   - Customize the message that will be fed into the LLM as an example to follow. It is perferable that you paste in a message you have previously used with prospects.\n"
+        "   - Save the template and go to the 'Message Generation' page to use it.\n"
+        "2. **Manage Your Templates**\n"
+        "   - Search for the template you want to manage.\n"
+        "   - Click on the template to alter the name, prompt, or message.\n"
+        "   - Click on the 'Update' button to save your changes, or 'Delete' to remove your template.\n"
+    )
+
+with st.expander(label="How does Customer Story Manager Work?"):
+    st.write("---")
+    st.markdown(
+        "This page allows you to manage Customer Stories to use for message generation.\n"
+        "You can create, delete, or modify your Customer Stories and use them in the 'Message Generation' page.\n"
+        "Customer Stories you create will be accessable to all users, however only you will be able to edit or delete them.\n"
+        "Similarly, any Customer Story created by another user will be available for you to use. However only the owner will be able to edit or delete them.\n"
+        "1. **Create a New Customer Story**\n"
+        "   - Add the name of the customer you want to add a success story for.\n"
+        "   - Add the industry of the customer you want to add a success story for.\n"
+        "   - Add the details of the Customer Story, make sure to add in metrics on how Snowflake has made an impact on their busienss.\n"
+        "2. **Manage Your Customer Story**\n"
+        "   - Search for the Customer Story you want to manage.\n"
+        "   - Click on the Customer Story to alter the name, prompt, or message.\n"
+        "   - Click on the 'Update' button to save your changes, or 'Delete' to remove your Customer Story.\n"
+    )
+
+
+with st.expander(label="How does Battle Cards Manager Work?"):
+    st.write("---")
+    st.markdown(
+        "This page allows you to manage Battle Cards to use for message generation.\n"
+        "You can create, delete, or modify your Battle Cards and use them in the 'Message Generation' page.\n"
+        "Battle Cards you create will be accessable to all users, however only you will be able to edit or delete them.\n"
+        "Similarly, any Battle Card created by another user will be available for you to use. However only the owner will be able to edit or delete them.\n"
+        "1. **Create a New Battle Card**\n"
+        "   - Add the name of the Battle Card you want to add.\n"
+        "   - Add the industry of the Battle Card.\n"
+        "   - Add the details for the Battle Card.\n"
+        "2. **Manage Your Customer Story**\n"
+        "   - Search for the Battle Card you want to manage.\n"
+        "   - Click on the Battle Card to alter the name, prompt, or message.\n"
+        "   - Click on the 'Update' button to save your changes, or 'Delete' to remove your Battle Card.\n"
+    )
+
 with st.expander(label="What does the 'Search Profiles' toggle in Prospect Finder do?"):
     st.write("---")
     st.markdown(
@@ -91,6 +155,3 @@ with st.expander(label="What does the 'Search Profiles' toggle in Prospect Finde
         "2. **Toggle OFF - Market/Domain Research**\n"
         "   - Turning this toggle off to query the LLM on information on the profiles retrieved, industry, domain, roles, or responsibilities of the profiles.\n"
     )
-
-
-
