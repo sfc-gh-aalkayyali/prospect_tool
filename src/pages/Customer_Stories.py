@@ -97,6 +97,13 @@ if st.button("Save Customer Story", use_container_width=True, type='primary'):
                 """
                 session.sql(cortex_search_query).collect()
                 st.toast("Cortex Search function successfully updated!", icon="✅")
+                del st.session_state.company_name
+                st.session_state.company_name = ''
+                del st.session_state.customer_story
+                st.session_state.customer_story = ''
+                del st.session_state.company_industry
+                st.session_state.company_industry = ''
+                st.rerun()
                 
             except Exception as e:
                 st.error(f"Error saving template: {e}")
