@@ -10,14 +10,14 @@ def init_config_options_generation():
         # Selectbox using session state
         st.selectbox(
             "Select LLM Model",
-            ("llama3.1-70b", "deepseek-r1"),
+            ("deepseek-r1", "llama3.1-70b"),
             key="selected_model"
         )
 
         st.slider(
             "Temperature/Creativity",
             step=0.1,
-            value=st.session_state.get("temperature", 0.5),  # Default to 0.5 if not set
+            value=st.session_state.get("temperature", 0.7),
             min_value=0.0,
             max_value=1.0,
             help=f"""*Higher temperature will result in more creative, diverse, but potentially less coherent outputs. Conversely, lower temperature makes the model more predictable, conservative, and focused. 

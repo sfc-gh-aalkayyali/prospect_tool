@@ -177,7 +177,7 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
     st.session_state.general_messages.append({"role": "user", "content": st.session_state.selected_prompt})
 
     with st.chat_message("assistant", avatar=icons["assistant"]):
-        with st.spinner("Thinking..."):
+        with st.spinner("Thinking...",  show_time=True):
             if search_profile_toggle:
                 try:
                     generated_response = table_complete_function(create_table_prompt(st.session_state.selected_prompt))
@@ -298,7 +298,7 @@ if question:
         st.markdown(question)
 
     with st.chat_message("assistant", avatar=icons["assistant"]):
-        with st.spinner("Thinking..."):
+        with st.spinner("Thinking...",  show_time=True):
             if search_profile_toggle:
                 try:
                     generated_response = table_complete_function(create_table_prompt(question))

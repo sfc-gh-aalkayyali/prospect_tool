@@ -172,7 +172,7 @@ else:
                                     TEXT = ?
                                 WHERE BATTLE_CARD_ID = ?
                             """
-                            with st.spinner(text="Updating battlecard..."):
+                            with st.spinner(text="Updating battlecard...", show_time=True):
                                 try:
                                     session.sql(update_query, params=[updated_name, updated_info, battlecard_id]).collect()
                                     st.toast(f"Updated Battle Card for {updated_name}.", icon="🎉")
@@ -205,7 +205,7 @@ else:
                     with col2:
                         if st.button("Delete", key=f"delete_{battlecard_id}", use_container_width=True):
                             delete_query = "DELETE FROM BATTLECARDS WHERE BATTLE_CARD_ID = ?"
-                            with st.spinner(text="Deleting battlecard..."):
+                            with st.spinner(text="Deleting battlecard...",  show_time=True):
                                 try:
                                     session.sql(delete_query, params=[battlecard_id]).collect()
                                     st.toast(f"Deleted Battle Card.", icon="🎉")
