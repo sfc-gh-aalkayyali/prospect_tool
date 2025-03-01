@@ -84,8 +84,7 @@ def table_complete_function(prompt):
     "FULLNAME", "COMPANYNAME", "INDUSTRY", "TITLE",  
     "CLEANED_CLASSIFICATION", "LOCATION", "TITLEDESCRIPTION", 
     "SUMMARY", "LINKEDINPROFILEURL", "DURATIONINROLE", 
-    "DURATIONINCOMPANY", "CONNECTIONDEGREE", "SHAREDCONNECTIONSCOUNT", 
-    "TIMESTAMP"
+    "DURATIONINCOMPANY", "CONNECTIONDEGREE", "SHAREDCONNECTIONSCOUNT"
 ]].rename(columns={
     "FULLNAME": "Full Name",
     "COMPANYNAME": "Company Name",
@@ -99,8 +98,7 @@ def table_complete_function(prompt):
     "DURATIONINROLE": "Duration In Role",
     "DURATIONINCOMPANY": "Duration At Company",
     "CONNECTIONDEGREE": "Connection Degree",
-    "SHAREDCONNECTIONSCOUNT": "Shared Connections",
-    "TIMESTAMP": "Data Timestamp"
+    "SHAREDCONNECTIONSCOUNT": "Shared Connections"
 })
     return df
 

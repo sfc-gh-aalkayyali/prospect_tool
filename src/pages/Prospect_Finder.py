@@ -4,8 +4,10 @@ from functions.helper_session import *
 import pandas as pd
 from datetime import datetime
 import uuid
+from io import BytesIO
 from functions.helper_session import *
 from st_aggrid import AgGrid, GridOptionsBuilder
+import xlsxwriter
 
 
 init_session_state()
@@ -273,20 +275,39 @@ for index, message in enumerate(st.session_state.general_messages):
             if not filtered_df.empty:
                 st.session_state.general_profiles = pd.concat([st.session_state.general_profiles, filtered_df], ignore_index=True)
 
-            if st.button(f"Send Profiles to Message Generation", key=f"general_generate_messages_{general_table_index}"):
-                if not filtered_df.empty and "Full Name" in filtered_df.columns:
-                    st.session_state.profile_selection = filtered_df["Full Name"].tolist()
-                    st.success(f"Successfully sent {len(filtered_df)} profiles to Message Generator")
-                    st.switch_page("pages/Message_Generation.py")
-                else:
-                    st.warning("No profiles selected or data missing!")
+            col1, col2, col3 = st.columns([3, 1, 1], gap='small')
+
+            with col1:
+                if st.button(f"Send Profiles to Message Generation", key=f"general_generate_messages_{general_table_index}", use_container_width=True):
+                    if not filtered_df.empty and "Full Name" in filtered_df.columns:
+                        st.session_state.profile_selection = filtered_df["Full Name"].tolist()
+                        st.success(f"Successfully sent {len(filtered_df)} profiles to Message Generator")
+                        st.switch_page("pages/Message_Generation.py")
+                    else:
+                        st.warning("No profiles selected or data missing!")
             csv_data = filtered_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                label=f"Download Table {general_table_index}",
-                data=csv_data,
-                file_name=f"filtered_profiles_{general_table_index}_{datetime.now()}.csv",
-                mime="text/csv"
-            )
+            excel_buffer = BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
+                filtered_df.to_excel(writer, index=False, sheet_name="Filtered Data")
+            excel_data = excel_buffer.getvalue()
+
+            with col2:
+                st.download_button(
+                    label=f"Download CSV",
+                    data=csv_data,
+                    file_name=f"filtered_profiles_{general_table_index}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+            with col3:
+                st.download_button(
+                    label=f"Download Excel",
+                    data=excel_data,
+                    file_name=f"filtered_profiles_{general_table_index}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True
+                )
             general_table_index += 1
         else:
             st.markdown(message["content"])
