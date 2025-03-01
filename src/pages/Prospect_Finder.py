@@ -270,10 +270,12 @@ for index, message in enumerate(st.session_state.general_messages):
 
             st.session_state.generated_profiles.extend(filtered_df.to_dict(orient="records"))
 
+            if not filtered_df.empty:
+                st.session_state.general_profiles = pd.concat([st.session_state.general_profiles, filtered_df], ignore_index=True)
+
             if st.button(f"Send Profiles to Message Generation", key=f"general_generate_messages_{general_table_index}"):
                 if not filtered_df.empty and "Full Name" in filtered_df.columns:
                     st.session_state.profile_selection = filtered_df["Full Name"].tolist()
-                    st.session_state.general_profiles = filtered_df  # Ensure the full profile data is stored
                     st.success(f"Successfully sent {len(filtered_df)} profiles to Message Generator")
                     st.switch_page("pages/Message_Generation.py")
                 else:

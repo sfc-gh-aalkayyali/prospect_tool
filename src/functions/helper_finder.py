@@ -56,13 +56,17 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
                 st.markdown(st.session_state.general_chat_history)
 
 def table_complete_function(prompt):
-    response = remove_think_tags(Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session))
+    if st.session_state.selected_model == 'deepseek-r1':
+        response = remove_think_tags(Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session))
+    else:
+        response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+    
     response = response.strip()
+
     if response.startswith("I don't know the answer to that question.") or response.startswith("An error occurred:"):
         return response
 
     print(response)
-
     # Split individual profiles
     profiles = re.split(r" \| ", response)
 

@@ -244,11 +244,13 @@ def remove_think_tags(text):
     return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
 def complete_function(prompt):
-    prompt_json = json.dumps(prompt)
 
     response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
     
-    return remove_think_tags(response)
+    if st.session_state.selected_model == 'deepseek-r1':
+        return remove_think_tags(response)
+    else:
+        return response
 
 def logout():
     st.session_state.clear()
