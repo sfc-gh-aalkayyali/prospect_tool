@@ -54,24 +54,6 @@ st.markdown("---")
 if st.session_state.logged_in and st.session_state.username == 'admin': 
     session = create_session()
 
-    if "logged_in" not in st.session_state or not st.session_state["logged_in"] or st.session_state["username"] == "guest":
-        st.warning("Please log in or register to manage or create templates.")
-        if st.button("Login or Register", use_container_width=True):
-            st.session_state["template_manager_show_confirm"] = True
-
-        if st.session_state.template_manager_show_confirm:
-            st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Continue", use_container_width=True):
-                    st.session_state.clear()
-                    st.rerun()
-            with col2:
-                if st.button("❌ Cancel", use_container_width=True):
-                    st.session_state.template_manager_show_confirm = False
-                    st.rerun()
-        st.stop()
-
     username = st.session_state["username"]
 
     adding_customer_story = f"""INSERT INTO STORIES(TEXT, USERNAME, DATE_ADDED, STORY_ID, INDUSTRY) VALUES(?, ?, ?, ?, ?)"""
@@ -203,6 +185,7 @@ if st.session_state.logged_in and st.session_state.username == 'admin':
                                 #         cortex_search_query = """
                                 #             CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
                                 #             ON text
+                                #             ATTRIBUTES industry
                                 #             WAREHOUSE = compute_wh
                                 #             TARGET_LAG = '24 hours'
                                 #             EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
@@ -232,6 +215,7 @@ if st.session_state.logged_in and st.session_state.username == 'admin':
                                 #         cortex_search_query = """
                                 #             CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
                                 #             ON text
+                                #             ATTRIBUTES industry
                                 #             WAREHOUSE = compute_wh
                                 #             TARGET_LAG = '24 hours'
                                 #             EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'

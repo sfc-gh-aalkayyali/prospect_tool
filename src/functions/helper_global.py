@@ -22,7 +22,6 @@ def init_session_state():
         ("general_people", []),
         ("profile_selection", []),
         ("customer_stories_industry", []),
-        ("customer_stories_company", []),
         ("selected_prompt", None),
         ("general_profiles", pd.DataFrame()),
         ("customer_stories_docs", []),
@@ -180,11 +179,6 @@ def query_stories_cortex_search_service(query):
     if st.session_state.customer_stories_industry:
         filters.append({
             "@or": [{"@eq": {"INDUSTRY": cls}} for cls in st.session_state.customer_stories_industry]
-        })
-
-    if st.session_state.customer_stories_company:
-        filters.append({
-            "@or": [{"@eq": {"COMPANY_NAME": cls}} for cls in st.session_state.customer_stories_company]
         })
 
     filters_dict = {"@and": filters} if filters else {}
