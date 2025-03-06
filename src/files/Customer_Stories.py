@@ -54,96 +54,128 @@ st.markdown("---")
 if st.session_state.logged_in and st.session_state.username == 'admin': 
     session = create_session()
 
-    if "logged_in" not in st.session_state or not st.session_state["logged_in"] or st.session_state["username"] == "guest":
-        st.warning("Please log in or register to manage or create templates.")
-        if st.button("Login or Register", use_container_width=True):
-            st.session_state["template_manager_show_confirm"] = True
-
-        if st.session_state.template_manager_show_confirm:
-            st.error("⚠ If you continue, this will take you to the homepage to login or register and you will lose all chat history. Do you want to continue? ⚠")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Continue", use_container_width=True):
-                    st.session_state.clear()
-                    st.rerun()
-            with col2:
-                if st.button("❌ Cancel", use_container_width=True):
-                    st.session_state.template_manager_show_confirm = False
-                    st.rerun()
-        st.stop()
-
     username = st.session_state["username"]
 
     adding_customer_story = f"""INSERT INTO STORIES(TEXT, USERNAME, DATE_ADDED, STORY_ID, INDUSTRY) VALUES(?, ?, ?, ?, ?)"""
 
     st.markdown("### Add a New Customer Story")
-    columns = st.columns(2)
-    with columns[0]:
-        file = st.file_uploader(label="Upload your customer stories", type="pdf", key="customer_story_pdf")
-    with columns[1]:
-        industry = st.text_input(label="Industry", placeholder="Enter the Industry...", key="customer_industry", )
+    upload_option = st.selectbox(label="Select your preferred method to upload", options=["Upload PDF", "Manually Enter"], help="When uploading a PDF, each customer story must have two slides. One introductory slide, and one slide with the content. The app concatenates the content every two slides.\n\nIf you are unsure about the format you may manually enter the content.")
+    if upload_option == "Upload PDF":
+        columns = st.columns(2)
+        with columns[0]:
+            file = st.file_uploader(label="Upload your customer stories", type="pdf", key="customer_story_pdf")
+        with columns[1]:
+            industry = st.text_input(label="Industry", placeholder="Enter the Industry...", key="customer_industry", )
 
-    if file:
-        file.seek(0)
-        with st.container(height=600):
-            pdf_bytes = file.read()
-            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        if file:
+            file.seek(0)
+            with st.container(height=600):
+                pdf_bytes = file.read()
+                doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-            full_text = ""
-            combined_text = ""
-            all_stories = []
+                full_text = ""
+                combined_text = ""
+                all_stories = []
 
-            for page_number, page in enumerate(doc, start=1):
-                page_text = page.get_text()
-                cleaned_text = clean_text(page_text)
-                combined_text += cleaned_text + "\n\n"
-                
+                for page_number, page in enumerate(doc, start=1):
+                    page_text = page.get_text()
+                    cleaned_text = clean_text(page_text)
+                    combined_text += cleaned_text + "\n\n"
+                    
 
-                # Every 2 pages or at the end of the document
-                if page_number % 2 == 0 or page_number == len(doc):
-                    story = combined_text.strip()
-                    all_stories.append(story)
+                    # Every 2 pages or at the end of the document
+                    if page_number % 2 == 0 or page_number == len(doc):
+                        story = combined_text.strip()
+                        all_stories.append(story)
 
-                    with st.container(height=300):
-                        st.write(story)
-                    if st.button(
-                        "Add Customer Story",
-                        use_container_width=True,
-                        key=f"add_story_{page_number}"
-                    ):
-                        try:
+                        with st.container(height=300):
+                            st.write(story)
+                        if st.button(
+                            "Add Customer Story",
+                            use_container_width=True,
+                            key=f"add_story_{page_number}"
+                        ):
+                            try:
+                                if is_duplicate(story):
+                                    st.toast("Duplicate story found. Skipping.", icon="❌")
+                                else:
+                                    id = uuid.uuid4()
+                                    session.sql(adding_customer_story, params=[story, st.session_state.username, datetime.now(), str(id), st.session_state.customer_industry]).collect()
+                                    st.toast("Added Customer Story.", icon="🎉")
+                            except Exception as e:
+                                st.error(f"Error adding story: {e}")
+
+
+                        combined_text = ""
+
+                        full_text += combined_text + "\n\n"
+                        combined_text = ""
+            if all_stories:
+                if st.button("Upload All Customer Stories", use_container_width=True, type="primary"):
+                    duplicates = 0
+                    uploaded = 0
+                    try:
+                        for i, story in enumerate(all_stories, start=1):
                             if is_duplicate(story):
-                                st.toast("Duplicate story found. Skipping.", icon="❌")
+                                st.toast(f"Story {i} is a duplicate. Skipping.", icon="❌")
+                                duplicates += 1
                             else:
                                 id = uuid.uuid4()
                                 session.sql(adding_customer_story, params=[story, st.session_state.username, datetime.now(), str(id), st.session_state.customer_industry]).collect()
-                                st.toast("Added Customer Story.", icon="🎉")
-                        except Exception as e:
-                            st.error(f"Error adding story: {e}")
+                                st.toast(f"Uploaded story {i}", icon="✅")
+                                uploaded += 1
+                        st.success(f"{uploaded} new stories uploaded. {duplicates} duplicates skipped.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error uploading stories: {e}")
+    elif upload_option == "Manually Enter":
 
+        customer_industry = st.text_input("Customer Industry", key="company_industry", placeholder="Type here...")
 
-                    combined_text = ""
+        customer_story = st.text_area("Customer Success Story", height=200, key="customer_story", placeholder="Type here...")
 
-                    full_text += combined_text + "\n\n"
-                    combined_text = ""
-        if all_stories:
-            if st.button("Upload All Customer Stories", use_container_width=True, type="primary"):
-                duplicates = 0
-                uploaded = 0
-                try:
-                    for i, story in enumerate(all_stories, start=1):
-                        if is_duplicate(story):
-                            st.toast(f"Story {i} is a duplicate. Skipping.", icon="❌")
-                            duplicates += 1
-                        else:
-                            id = uuid.uuid4()
-                            session.sql(adding_customer_story, params=[story, st.session_state.username, datetime.now(), str(id), st.session_state.customer_industry]).collect()
-                            st.toast(f"Uploaded story {i}", icon="✅")
-                            uploaded += 1
-                    st.success(f"{uploaded} new stories uploaded. {duplicates} duplicates skipped.")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error uploading stories: {e}")
+        if st.button("Save Customer Story", use_container_width=True, type='primary'):
+            if not customer_industry.strip():
+                st.warning("Please enter the industry of the customer before saving.")
+            elif not customer_story.strip():
+                st.warning("Please enter a success story before saving.")
+            else:
+                story_id = str(uuid.uuid4())
+                insert_query = """
+                    INSERT INTO STORIES (INDUSTRY, TEXT, USERNAME, DATE_ADDED, STORY_ID)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """
+                params = (customer_industry, customer_story, username, datetime.now(), story_id)
+
+                with st.spinner(text="In progress...",  show_time=True):
+                    try:
+                        session.sql(insert_query, params=params).collect()
+                        st.toast(f"Customer Story added!", icon="✅")
+
+                        # cortex_search_query = """
+                        #     CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                        #     ON text
+                        #     ATTRIBUTES industry
+                        #     WAREHOUSE = compute_wh
+                        #     TARGET_LAG = '24 hours'
+                        #     EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                        #     AS (
+                        #         SELECT 
+                        #             text,
+                        #             industry,
+                        #         FROM LINKEDIN.public.stories
+                        #     );
+                        # """
+                        # session.sql(cortex_search_query).collect()
+                        # st.toast("Cortex Search function successfully updated!", icon="✅")
+                        del st.session_state.customer_story
+                        st.session_state.customer_story = ''
+                        del st.session_state.company_industry
+                        st.session_state.company_industry = ''
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Error saving template: {e}")
 
 
     st.markdown("---")
@@ -203,6 +235,7 @@ if st.session_state.logged_in and st.session_state.username == 'admin':
                                 #         cortex_search_query = """
                                 #             CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
                                 #             ON text
+                                #             ATTRIBUTES industry
                                 #             WAREHOUSE = compute_wh
                                 #             TARGET_LAG = '24 hours'
                                 #             EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
@@ -232,6 +265,7 @@ if st.session_state.logged_in and st.session_state.username == 'admin':
                                 #         cortex_search_query = """
                                 #             CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
                                 #             ON text
+                                #             ATTRIBUTES industry
                                 #             WAREHOUSE = compute_wh
                                 #             TARGET_LAG = '24 hours'
                                 #             EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'

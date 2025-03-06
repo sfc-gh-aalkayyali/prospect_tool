@@ -91,10 +91,6 @@ else:
                 del st.session_state.profile_selection
                 st.session_state.profile_selection = []
 
-            if st.session_state.customer_stories_company:
-                del st.session_state.customer_stories_company
-                st.session_state.customer_stories_company = []
-
             if st.session_state.customer_stories_industry:
                 del st.session_state.customer_stories_industry
                 st.session_state.customer_stories_industry = []
@@ -125,18 +121,12 @@ else:
 
             with col1:
                 st.text_input("Search Keyword", placeholder="Enter keyword...", key="customer_stories_search")
-                st.slider("Limit stories retrieved", min_value=1, max_value=20, value=3, key="customer_stories_limit")
             with col2:
                 industries = session.sql('SELECT DISTINCT INDUSTRY FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
                 industries = industries.dropna().loc[industries['INDUSTRY'].astype(str).str.strip() != '']
                 selected_industries = st.multiselect("Select Industry (OPTIONAL)", industries,  default=st.session_state.customer_stories_industry)
                 st.session_state.customer_stories_industry = selected_industries
-
-                companies = session.sql('SELECT DISTINCT COMPANY_NAME FROM LINKEDIN.PUBLIC."STORIES"').to_pandas()
-                companies = companies.dropna().loc[companies['COMPANY_NAME'].astype(str).str.strip() != '']
-                selected_companies = st.multiselect("Select Company (OPTIONAL)", companies, default=st.session_state.customer_stories_company)
-                st.session_state.customer_stories_company = selected_companies
-
+            st.slider("Limit stories retrieved", min_value=1, max_value=20, value=3, key="customer_stories_limit")
             
             def find_stories():
                 if st.session_state.customer_stories_docs and st.session_state.customer_stories_docs != []:
