@@ -41,13 +41,8 @@ if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if not st.session_state["logged_in"]:
-    st.session_state.setdefault("snowflake", False)
-
     st.markdown("<h1 style='text-align: center;'>Welcome to the Snowflake Prospecting Tool</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 16px;'>Helping AE's and SDR's send the right message, to the right person, at the right time.</p>", unsafe_allow_html=True)
-    if not st.session_state.snowflake:
-        st.snow()
-        st.session_state.snowflake = True
         
     padding1, content, padding2 = st.columns([10, 80, 10])
     with content:

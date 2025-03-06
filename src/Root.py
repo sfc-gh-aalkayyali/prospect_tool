@@ -11,8 +11,7 @@ if not st.session_state.logged_in:
             st.Page("pages/Register.py", title="Register"),
         ]
     }
-
-elif st.session_state.logged_in and st.session_state["username"] != 'guest':
+elif st.session_state.logged_in and st.session_state["username"] == 'admin':
     pages = {
         "Navigation Pages": [
             st.Page("pages/Home.py", title="Home"),
@@ -22,6 +21,16 @@ elif st.session_state.logged_in and st.session_state["username"] != 'guest':
             st.Page("pages/Template_Manager.py", title="Template Manager"),
             st.Page("pages/Customer_Stories.py", title="Customer Story Manager"),
             st.Page("pages/Battle_Cards.py", title="Battle Cards Manager"),
+        ]
+    }
+elif st.session_state.logged_in and st.session_state["username"] != 'guest':
+    pages = {
+        "Navigation Pages": [
+            st.Page("pages/Home.py", title="Home"),
+            st.Page("pages/Prospect_Finder.py", title="Prospect Finder"),
+            st.Page("pages/Message_Generation.py", title="Message Generation"),
+            st.Page("pages/Chat_History.py", title="Chat History"),
+            st.Page("pages/Template_Manager.py", title="Template Manager"),
         ]
     }
 
