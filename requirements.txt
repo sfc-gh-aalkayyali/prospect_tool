@@ -64,6 +64,7 @@ pydantic_core==2.27.2
 pydeck==0.9.1
 Pygments==2.19.1
 PyJWT==2.10.1
+PyMuPDF==1.25.3
 pyOpenSSL==24.3.0
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
