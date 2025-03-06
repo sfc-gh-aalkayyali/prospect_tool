@@ -212,4 +212,4 @@ else:
                                 st.error(f"Error deleting template: {e}")
 
 if st.button("Go to Message Generator", use_container_width=True):
-    st.switch_page("pages/Message_Generation.py")
+    st.switch_page("files/Message_Generation.py")

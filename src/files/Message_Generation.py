@@ -58,7 +58,7 @@ st.session_state.top_p = 0.9
 if user_templates.shape[0] == 0 and username != 'guest':
     st.warning("Please create message templates before using this feature.")
     if st.button("Go to Template Manager", use_container_width=True):
-        st.switch_page("pages/Template_Manager.py")
+        st.switch_page("files/Template_Manager.py")
 elif user_templates.shape[0] == 0 and username == 'guest':
     st.warning("This feature is currently unavailable for guests, please login or Signup to continue.")
 else:
@@ -340,7 +340,7 @@ else:
     else:
         st.warning("Please search for profiles before using this feature.")    
         if st.button("Go to Prospect Finder", use_container_width=True):
-            st.switch_page("pages/Prospect_Finder.py")
+            st.switch_page("files/Prospect_Finder.py")
         if st.session_state.logged_in and st.session_state.username != 'guest':
             if st.button("Go to Chat History", use_container_width=True):
-                st.switch_page("pages/Chat_History.py")
+                st.switch_page("files/Chat_History.py")

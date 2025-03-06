@@ -37,7 +37,7 @@ with col1:
             "Use filters, extract prospect linkedin profile data, query the LLM."
         )
         if st.button("Go to Prospect Finder", key="page1_btn", use_container_width=True, type="primary"):
-            st.switch_page("pages/Prospect_Finder.py")
+            st.switch_page("files/Prospect_Finder.py")
 
 with col2:
     with st.container(border=False):
@@ -47,7 +47,7 @@ with col2:
             "Choose profiles, customer success stories, add your personalized messages."
         )
         if st.button("Go to Message Generation", key="page2_btn", use_container_width=True, type="primary"):
-            st.switch_page("pages/Message_Generation.py")
+            st.switch_page("files/Message_Generation.py")
 
 st.write("")
 st.write("")

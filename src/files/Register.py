@@ -110,5 +110,5 @@ if (not st.session_state["logged_in"]) or (st.session_state["logged_in"] and st.
                     st.success(f"Account created! Welcome, {new_username}!")
                     st.rerun()
         if st.button("Go back to Login", use_container_width=True):
-            st.switch_page("pages/Login.py")
+            st.switch_page("files/Login.py")
             st.stop()

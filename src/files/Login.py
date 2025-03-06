@@ -83,7 +83,7 @@ if not st.session_state["logged_in"]:
             st.success("Logged in as Guest.")
             st.rerun()
         if st.button("Register", use_container_width=True):
-            st.switch_page("pages/Register.py")
+            st.switch_page("files/Register.py")
             st.stop()
 
     if st.session_state["failed_attempts"] >= 3:

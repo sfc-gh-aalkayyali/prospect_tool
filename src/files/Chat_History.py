@@ -121,7 +121,7 @@ chats = load_chat(username, session)
 if chats.empty:
     st.warning("No previous chats found.")
     if st.button("Go to Prospect Finder", use_container_width=True):
-        st.switch_page("pages/Prospect_Finder.py")
+        st.switch_page("files/Prospect_Finder.py")
 
 else:
     # Display chat history without Messages column
@@ -227,4 +227,4 @@ with st.container(height=400):
         st.session_state.general_messages = chat_row["Messages"]
         st.session_state.general_chat_history = chat_row["Chat Summary"]
         st.success("Chat loaded successfully! Redirecting...")
-        st.switch_page("pages/Prospect_Finder.py")  # Adjust path as needed
+        st.switch_page("files/Prospect_Finder.py")  # Adjust path as needed

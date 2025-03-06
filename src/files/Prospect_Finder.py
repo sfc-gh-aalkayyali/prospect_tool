@@ -282,7 +282,7 @@ for index, message in enumerate(st.session_state.general_messages):
                     if not filtered_df.empty and "Full Name" in filtered_df.columns:
                         st.session_state.profile_selection = filtered_df["Full Name"].tolist()
                         st.success(f"Successfully sent {len(filtered_df)} profiles to Message Generator")
-                        st.switch_page("pages/Message_Generation.py")
+                        st.switch_page("files/Message_Generation.py")
                     else:
                         st.warning("No profiles selected or data missing!")
             csv_data = filtered_df.to_csv(index=False).encode('utf-8')
