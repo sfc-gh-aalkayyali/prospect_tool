@@ -3,6 +3,7 @@ import pandas as pd
 import json
 from functions.helper_session import create_session
 from functions.helper_global import *
+from st_aggrid import AgGrid, GridOptionsBuilder
 
 # Initialize session
 session = create_session()
@@ -137,31 +138,88 @@ else:
         if selected_chat:
             chat_row = chat_history_df[chat_history_df["Title"] == selected_chat].iloc[0]
 
-    # 🔹 Wrap messages inside a container for scrollability
-    st.markdown("---")
-    st.subheader("View Saved Chats")
-    with st.container(height=400):
+st.markdown("---")
+st.subheader("View Saved Chats")
+with st.container(height=400):
 
-        for message in chat_row["Messages"]:
-            role = message["role"]
-            content = message["content"]
-            icon = icons.get(role, "")
+    for message in chat_row["Messages"]:
+        role = message["role"]
+        content = message["content"]
+        icon = icons.get(role, "")
 
-            with st.chat_message(role, avatar=icon):
-                # Convert DataFrame objects back into readable DataFrames
-                if isinstance(content, pd.DataFrame):
-                    st.dataframe(content, hide_index=True, use_container_width=True)
-                else:
-                    try:
-                        # If content is a JSON-encoded string, try converting it into a DataFrame
-                        content_json = json.loads(content)
-                        if isinstance(content_json, list) and all(isinstance(i, dict) for i in content_json):
-                            content_df = pd.DataFrame(content_json)
-                            st.dataframe(content_df, hide_index=True, use_container_width=True)
-                        else:
-                            st.markdown(f"**{role.capitalize()}:** {content}")  # Normal text
-                    except json.JSONDecodeError:
-                        st.markdown(f"**{role.capitalize()}:** {content}")  # Normal text
+        with st.chat_message(role, avatar=icon):
+            if isinstance(content, pd.DataFrame):
+                # Build AgGrid options
+                gb = GridOptionsBuilder.from_dataframe(content)
+                gb.configure_default_column(
+                    sortable=True,
+                    resizable=True,
+                    wrapText=True,
+                    autoHeight=True
+                )
+
+                expandable_columns = ["Profile Summary", "Job Description"]
+                for col in expandable_columns:
+                    if col in content.columns:
+                        gb.configure_column(
+                            col,
+                            editable=True,
+                            cellEditor="agLargeTextCellEditor",
+                            cellEditorPopup=True,
+                            width=200,
+                            maxWidth=200,
+                            minWidth=200,
+                            cellStyle={
+                                'overflow': 'hidden',
+                                'textOverflow': 'ellipsis',
+                                'whiteSpace': 'nowrap'
+                            }
+                        )
+
+                grid_options = gb.build()
+                row_height = 40
+                max_visible_rows = min(len(content), 10)
+                dynamic_height = max(200, max_visible_rows * row_height)
+
+                AgGrid(
+                    content,
+                    gridOptions=grid_options,
+                    height=dynamic_height,
+                    enable_enterprise_modules=True,
+                    pagination=True,
+                    paginationPageSize=20
+                )
+            else:
+                try:
+                    content_json = json.loads(content)
+                    if isinstance(content_json, list) and all(isinstance(i, dict) for i in content_json):
+                        content_df = pd.DataFrame(content_json)
+                        
+                        # Same AgGrid rendering for JSON-parsed content
+                        gb = GridOptionsBuilder.from_dataframe(content_df)
+                        gb.configure_default_column(
+                            sortable=True,
+                            resizable=True,
+                            wrapText=True,
+                            autoHeight=True
+                        )
+                        grid_options = gb.build()
+                        row_height = 40
+                        max_visible_rows = min(len(content_df), 10)
+                        dynamic_height = max(200, max_visible_rows * row_height)
+
+                        AgGrid(
+                            content_df,
+                            gridOptions=grid_options,
+                            height=dynamic_height,
+                            enable_enterprise_modules=True,
+                            pagination=True,
+                            paginationPageSize=20
+                        )
+                    else:
+                        st.markdown(f"**{role.capitalize()}:** {content}")
+                except json.JSONDecodeError:
+                    st.markdown(f"**{role.capitalize()}:** {content}")
 
     # Allow continuing chat
     if st.button("Continue Chat", use_container_width=True, type="primary"):
