@@ -186,9 +186,11 @@ def save_feedback(feedback_id, rating, feedback_text=""):
         """
 
         session.sql(insert_query, [feedback_id, rating, feedback_text, last_llm_message, chat_id, datetime.now()]).collect()
+        
+        st.toast(f"Thanks for your Feedback!", icon="✅")
 
     except Exception as e:
-        print(f"❌ Error saving feedback: {e}")
+        st.toast(f"Error saving feedback: {e}", icon="❌")
 
 # Function to handle feedback submission
 def handle_feedback_submission(rating):
@@ -380,10 +382,6 @@ if len(st.session_state.general_messages) > 0:
                 key="feedback_text",
                 disabled=st.session_state.thumbs_button
             )
-
-    # Display rating confirmation
-    if st.session_state.thumbs_button:
-        st.info(f"You rated this output as: {st.session_state.thumbs_button_feedback}")
 
     save_chat_history()
     components.html(html_code, height=0)
