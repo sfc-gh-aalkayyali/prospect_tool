@@ -7,7 +7,6 @@ import uuid
 from io import BytesIO
 from functions.helper_session import *
 from st_aggrid import AgGrid, GridOptionsBuilder
-import xlsxwriter
 
 
 init_session_state()
@@ -130,6 +129,8 @@ else:
 init_config_options_finder()
 if st.sidebar.button("Clear Conversation", use_container_width=True, type="secondary"):
     del st.session_state.general_messages
+    st.session_state.thumbs_button = False
+    st.session_state.feedback_submitted = False
     del st.session_state.general_chat_history
     del st.session_state.service_metadata
     del st.session_state.general_people
@@ -166,6 +167,48 @@ def save_chat_history():
             chat_title = "Untitled Chat"
         save_chat(datetime.now(), st.session_state.username, st.session_state.chat_id, chat_title, st.session_state.general_messages, st.session_state.general_chat_history)
 
+# def submit_feedback():
+#     if st.session_state.feedback_text.strip():  # Ensure feedback is not blank
+#         st.session_state.feedback_submitted = True
+
+def save_feedback(feedback_id, rating, feedback_text=""):
+    chat_id = str(st.session_state.chat_id)
+
+    last_llm_message = str({
+    "user": next((msg["content"] for msg in reversed(st.session_state.general_messages) if msg["role"] == "user"), ""),
+    "assistant": next((msg["content"] for msg in reversed(st.session_state.general_messages) if msg["role"] == "assistant"), "")
+    })
+
+    try:
+        insert_query = """
+        INSERT INTO CHAT_FEEDBACK (FEEDBACK_ID, RATING, TEXT, CHAT_CONTENT, CHAT_ID, DATE_ADDED)
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
+
+        session.sql(insert_query, [feedback_id, rating, feedback_text, last_llm_message, chat_id, datetime.now()]).collect()
+
+    except Exception as e:
+        print(f"❌ Error saving feedback: {e}")
+
+# Function to handle feedback submission
+def handle_feedback_submission(rating):
+
+    feedback_id = str(uuid.uuid4())
+
+    # Save feedback with rating (text feedback optional)
+    save_feedback(
+        feedback_id=feedback_id,
+        rating=rating,
+        feedback_text=st.session_state.get("feedback_text", "")
+    )
+
+    if st.session_state.feedback_text:
+        del st.session_state.feedback_text
+        st.session_state.feedback_text = ""
+
+    # Disable buttons after submission
+    st.session_state.thumbs_button = True
+
 st.title(f":mag: Prospect Finder")
 st.markdown("---")
 
@@ -194,11 +237,12 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
                     generated_response = complete_function(create_query_prompt(st.session_state.selected_prompt))
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
-
+        
             st.session_state.general_messages.append(
                 {"role": "assistant", "content": generated_response}
             )
-            save_chat_history()     
+            st.session_state.thumbs_button = False
+            st.session_state.feedback_submitted = False  
 
     st.session_state.selected_prompt = None
     st.rerun()
@@ -285,11 +329,13 @@ for index, message in enumerate(st.session_state.general_messages):
                         st.switch_page("files/Message_Generation.py")
                     else:
                         st.warning("No profiles selected or data missing!")
+                
             csv_data = filtered_df.to_csv(index=False).encode('utf-8')
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
                 filtered_df.to_excel(writer, index=False, sheet_name="Filtered Data")
             excel_data = excel_buffer.getvalue()
+
 
             with col2:
                 st.download_button(
@@ -311,7 +357,35 @@ for index, message in enumerate(st.session_state.general_messages):
             general_table_index += 1
         else:
             st.markdown(message["content"])
-    # Ensure new messages scroll into view
+
+if len(st.session_state.general_messages) > 0:
+    is_last_message = (
+        index == len(st.session_state.general_messages) - 1 and message["role"] == "assistant"
+    )
+    col0, col1, col2, col3, col4 = st.columns([1, 1.5, 1.5, 8, 7.5], gap="small")   
+
+    with col1:
+        st.button("👍", use_container_width=True, disabled=st.session_state.thumbs_button, 
+                  on_click=lambda: handle_feedback_submission("Good"))
+
+    with col2:
+        st.button("👎", use_container_width=True, disabled=st.session_state.thumbs_button, 
+                  on_click=lambda: handle_feedback_submission("Bad"))
+
+    with col3:
+        with st.expander("📝 Optional Feedback"):
+            st.text_area(
+                "Please provide comments on how the output can be improved:", 
+                max_chars=2000,
+                key="feedback_text",
+                disabled=st.session_state.thumbs_button
+            )
+
+    # Display rating confirmation
+    if st.session_state.thumbs_button:
+        st.info(f"You rated this output as: {st.session_state.thumbs_button_feedback}")
+
+    save_chat_history()
     components.html(html_code, height=0)
 
 
@@ -338,5 +412,6 @@ if question:
                     generated_response = "text", f"An error occurred: {e}"
 
             st.session_state.general_messages.append({"role": "assistant", "content": generated_response})
-            save_chat_history()
+            st.session_state.thumbs_button = False
+            st.session_state.feedback_submitted = False     
     st.rerun()

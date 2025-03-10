@@ -45,7 +45,11 @@ def init_session_state():
         ("selected_battle_cards", []),
         ("temperature", 0.5),
         ("top_p", 0.9),
-        ("generated_profiles", [])]:
+        ("thumbs_button", False),
+        ("feedback_submitted", False),
+        ("generated_profiles", []),
+        ("feedback_text", ''),
+        ("feedback_error", '')]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             

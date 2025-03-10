@@ -221,10 +221,19 @@ with st.container(height=400):
                 except json.JSONDecodeError:
                     st.markdown(f"**{role.capitalize()}:** {content}")
 
-    # Allow continuing chat
-    if st.button("Continue Chat", use_container_width=True, type="primary"):
-        st.session_state.chat_id = chat_row["Chat ID"]
-        st.session_state.general_messages = chat_row["Messages"]
-        st.session_state.general_chat_history = chat_row["Chat Summary"]
-        st.success("Chat loaded successfully! Redirecting...")
-        st.switch_page("files/Prospect_Finder.py")  # Adjust path as needed
+# Allow continuing chat
+if st.button("Continue Chat", use_container_width=True, type="primary"):
+    st.session_state.chat_id = chat_row["Chat ID"]
+    st.session_state.general_messages = chat_row["Messages"]
+    st.session_state.general_chat_history = chat_row["Chat Summary"]
+    if st.session_state.feedback_submitted:
+        del st.session_state.feedback_submitted
+        st.session_state.feedback_submitted = False
+    if st.session_state.feedback_error:
+        del st.session_state.feedback_error
+        st.session_state.feedback_error = False
+    if st.session_state.thumbs_button:
+        del st.session_state.thumbs_button
+        st.session_state.thumbs_button = False
+    st.success("Chat loaded successfully! Redirecting...")
+    st.switch_page("files/Prospect_Finder.py")  # Adjust path as needed

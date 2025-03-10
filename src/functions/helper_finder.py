@@ -102,30 +102,6 @@ def table_complete_function(prompt):
 })
     return df
 
-# FIELD_PATTERNS = {
-#     "First Name": re.compile(r"First Name:\s*(.+)"),
-#     "Last Name": re.compile(r"Last Name:\s*(.+)"),
-#     "Location": re.compile(r"Location:\s*(.+)"),
-#     "Shared Connections": re.compile(r"Shared Connections:\s*(\d+)"),
-#     "Title": re.compile(r"Title:\s*(.+)"),
-#     "Classification": re.compile(r"Classification:\s*(.+?)(?:\n|$)"),
-#     "Company": re.compile(r"Company:\s*(.+)"),
-#     "Industry": re.compile(r"Industry:\s*(.+)"),
-#     "Connection Degree": re.compile(r"Connection Degree:\s*(.+)"),
-#     "Duration in Role": re.compile(r"Duration in Role:\s*(.+?)\s+in role"),
-#     "Duration in Company": re.compile(r"Duration in Company:\s*(.+)"),
-#     "LinkedIn Profile URL": re.compile(r"LinkedIn Profile URL:\s*(.+)"),
-#     "Title Description": re.compile(r"Title Description:\s*(.+)"),
-#     "Summary": re.compile(r"Summary:\s*(.+)")
-# }
-
-# def extract_fields(profile):
-#     extracted = {}
-#     for field, pattern in FIELD_PATTERNS.items():
-#         match = pattern.search(profile)
-#         if match:
-#             extracted[field] = match.group(1).strip()
-#     return extracted
 
 def convert_to_int(value):
     """Converts numeric strings to integers, handling missing or invalid values."""
