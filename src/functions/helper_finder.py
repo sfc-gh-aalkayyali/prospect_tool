@@ -4,8 +4,12 @@ from snowflake.cortex import Complete, CompleteOptions
 from docx import Document
 from functions.helper_global import *
 import streamlit.components.v1 as components
+from streamlit_feedback import streamlit_feedback
+from streamlit_modal import Modal  # Import Modal
 import re
 import copy
+
+from datetime import datetime
 
 
 def init_config_options_finder():
@@ -345,3 +349,47 @@ def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summa
 
     except Exception as e:
         return False
+
+
+
+from datetime import datetime
+
+def save_feedback(chat_id, user_input, model_response, feedback_score, feedback_category, feedback_comment, flagged, rating):
+    """
+    Save user feedback into Snowflake, now including thumbs feedback and star rating.
+    Ensures explicit type conversion to avoid Snowflake mapping errors.
+    """
+    # Convert DataFrame inputs to string if necessary
+    if isinstance(user_input, pd.DataFrame):
+        user_input = user_input.to_json(orient="records")
+    elif user_input is not None:
+        user_input = str(user_input)
+
+    if isinstance(model_response, pd.DataFrame):
+        model_response = model_response.to_json(orient="records")
+    elif model_response is not None:
+        model_response = str(model_response)
+
+    # Ensure safe integer conversions
+    feedback_score = int(feedback_score) if feedback_score is not None else 0  # Defaults to 0 if None
+    rating = int(rating) if rating is not None else 3  # Defaults to 3 if None
+
+    # Insert into Snowflake with feedback_score (thumbs) and rating (stars)
+    session.sql(
+        """
+        INSERT INTO LINKEDIN.PUBLIC.LLM_FEEDBACK
+        (CHAT_ID, USER_INPUT, MODEL_RESPONSE, FEEDBACK_SCORE, FEEDBACK_COMMENT, FLAGGED, RATING, TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        params=[
+            str(chat_id),  
+            user_input if user_input else None,  
+            model_response if model_response else None,  
+            feedback_score,  # 1 for 👍, -1 for 👎, 0 if not selected
+            # str(feedback_category) if feedback_category else "Other",  
+            str(feedback_comment) if feedback_comment else None,  
+            bool(flagged),  
+            rating,  # 1-5 star rating
+            datetime.now()  
+        ]
+    ).collect()

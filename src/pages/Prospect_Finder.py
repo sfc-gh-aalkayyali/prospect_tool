@@ -8,6 +8,9 @@ from io import BytesIO
 from functions.helper_session import *
 from st_aggrid import AgGrid, GridOptionsBuilder
 import xlsxwriter
+from streamlit_feedback import streamlit_feedback
+from streamlit_modal import Modal  # Import Modal
+
 
 
 init_session_state()
@@ -203,74 +206,56 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
     st.session_state.selected_prompt = None
     st.rerun()
 
+
+
+
+
+
 general_table_index = 1
-# Loop through messages to display in chat
+
 for index, message in enumerate(st.session_state.general_messages):
     with st.chat_message(message["role"], avatar=icons[message["role"]]):
         if isinstance(message["content"], pd.DataFrame):
-
             dataframe = message["content"].copy()
 
             # Create GridOptions
             gb = GridOptionsBuilder.from_dataframe(dataframe)
-
-            # Enable sorting and resizing globally
             gb.configure_default_column(sortable=True, resizable=True, wrapText=True, autoHeight=True)
 
             # Enable filtering for specific columns
             filterable_columns = [
-                "Full Name",
-                "Company Name",
-                "Industry",
-                "Job Title",
-                "Classification",
-                "Location",
-                "Duration In Role",
-                "Duration At Company",
-                "Connection Degree",
-                "Shared Connections"
+                "Full Name", "Company Name", "Industry", "Job Title",
+                "Classification", "Location", "Duration In Role",
+                "Duration At Company", "Connection Degree", "Shared Connections"
             ]
-
             for col in filterable_columns:
                 if col in dataframe.columns:
-                    gb.configure_column(col, filterable=True, filter="agSetColumnFilter")  # Enables dropdown-based filter
-
+                    gb.configure_column(col, filterable=True, filter="agSetColumnFilter")
 
             # Enable word wrapping for text-heavy columns
             expandable_columns = ["Profile Summary", "Job Description"]
             for col in expandable_columns:
                 gb.configure_column(
-                    col,
-                    editable=True, 
-                    cellEditor="agLargeTextCellEditor", 
-                    cellEditorPopup=True,
-                    width=200,  # Strict column width
-                    maxWidth=200,  # Prevents column from stretching
-                    minWidth=200,  # Ensures consistency
+                    col, editable=True, cellEditor="agLargeTextCellEditor",
+                    cellEditorPopup=True, width=200, maxWidth=200, minWidth=200,
                     cellStyle={'overflow': 'hidden', 'textOverflow': 'ellipsis', 'whiteSpace': 'nowrap'}
                 )
+
             # Enable pagination
             grid_options = gb.build()
-        
-            # Display the AgGrid
-            row_height = 40  # Approximate row height in pixels
-            max_visible_rows = min(len(dataframe), 10)  # Show up to 10 rows by default
-            dynamic_height = max(200, max_visible_rows * row_height)  # Minimum height of 200px
+            row_height = 40  
+            max_visible_rows = min(len(dataframe), 10)  
+            dynamic_height = max(200, max_visible_rows * row_height)
 
-            grid_response = AgGrid(dataframe, 
-                gridOptions=grid_options, 
-                height=dynamic_height,  # Apply dynamic height
-                enable_enterprise_modules=True, 
-                pagination=True, 
-                paginationPageSize=20)
-            
+            grid_response = AgGrid(
+                dataframe, gridOptions=grid_options, height=dynamic_height,
+                enable_enterprise_modules=True, pagination=True, paginationPageSize=20
+            )
+
             filtered_df = pd.DataFrame(grid_response['data'])
 
-            if st.session_state.generated_profiles:
-                del st.session_state.generated_profiles
-                st.session_state.generated_profiles = []
-
-            st.session_state.generated_profiles.extend(filtered_df.to_dict(orient="records"))
+            # Ensure generated profiles are refreshed
+            st.session_state.generated_profiles = filtered_df.to_dict(orient="records")
 
             if not filtered_df.empty:
                 st.session_state.general_profiles = pd.concat([st.session_state.general_profiles, filtered_df], ignore_index=True)
@@ -285,6 +270,7 @@ for index, message in enumerate(st.session_state.general_messages):
                         st.switch_page("pages/Message_Generation.py")
                     else:
                         st.warning("No profiles selected or data missing!")
+
             csv_data = filtered_df.to_csv(index=False).encode('utf-8')
             excel_buffer = BytesIO()
             with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
@@ -308,11 +294,92 @@ for index, message in enumerate(st.session_state.general_messages):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
+
             general_table_index += 1
+
         else:
             st.markdown(message["content"])
-    # Ensure new messages scroll into view
-    components.html(html_code, height=0)
+
+    if "submitted_feedback" not in st.session_state:
+     st.session_state["submitted_feedback"] = {}
+
+
+    # **Feedback Section Inside an Expandable Container**
+  
+    if message["role"] == "assistant":
+        feedback_key = f"feedback_section_{index}"
+
+        with st.expander(f"📝 Please provide your feedback", expanded=False):
+            st.write("Your feedback matters! Let us know how we can improve.")  # Simple, non-markdown text
+
+            # Check if feedback was already submitted
+            feedback_submitted = feedback_key in st.session_state["submitted_feedback"]
+
+            if feedback_submitted:
+                st.success("✅ You have already submitted feedback for this response.")
+
+            # Form Layout (Still visible but submission is disabled)
+            with st.form(key=f"feedback_form_{index}"):
+                # Streamlit's Built-in Thumbs Feedback Component
+                feedback_result = st.feedback("thumbs", key=f"feedback_option_{index}")
+
+                feedback_value = 0  # Default
+                if feedback_result == 1:  # 👍 Selected
+                    feedback_value = 1
+                elif feedback_result == 0:  # 👎 Selected
+                    feedback_value = -1
+
+                st.write("Rate this response:")
+                rating = st.feedback("stars", key=f"rating_{index}")
+
+                # Ensure rating is always an integer (Defaults to 3 if None)
+                rating = int(rating) if rating is not None else 3
+
+                # Comment Box
+                feedback_comment = st.text_area("Additional Comments (Optional)", key=f"comment_{index}")
+
+                # Flag for Review
+                flagged = st.checkbox("Flag for Review", key=f"flagged_{index}")
+
+                # Submit Button (Disabled if feedback already submitted)
+                submitted = st.form_submit_button(
+                    "Submit Feedback",
+                    disabled=feedback_submitted  # Button is translucent if feedback is already submitted
+                )
+
+                if submitted and not feedback_submitted:
+                    user_input = st.session_state.general_messages[index - 1]["content"]
+                    model_response = message["content"]
+
+                    if isinstance(user_input, pd.DataFrame):
+                        user_input = user_input.to_json(orient="records")
+                    if isinstance(model_response, pd.DataFrame):
+                        model_response = model_response.to_json(orient="records")
+
+                    try:
+                        save_feedback(
+                            str(st.session_state.chat_id),
+                            user_input,
+                            model_response,
+                            int(feedback_value),  # Always an integer
+                            "Rating",
+                            feedback_comment if feedback_comment else None,
+                            bool(flagged),
+                            int(rating)  # Always an integer
+                        )
+                        st.success("✅ Feedback submitted successfully. Thank you for sharing!")
+
+                        # Mark feedback as submitted to prevent re-submission
+                        st.session_state["submitted_feedback"][feedback_key] = True
+
+                    except Exception as e:
+                        st.warning(f"⚠️ An error occurred while saving feedback: {e}")
+
+            
+
+
+# Ensure new messages scroll into view
+components.html(html_code, height=0)
 
 
 # Chat input for user

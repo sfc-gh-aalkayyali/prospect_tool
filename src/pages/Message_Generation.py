@@ -319,10 +319,15 @@ else:
 
                 
 
+            
+            if "submitted_feedback" not in st.session_state:
+                st.session_state["submitted_feedback"] = {}
+
             if st.session_state.get("generated_messages"):
                 st.markdown("---")
                 st.markdown("#### Generated Messages")
                 all_messages = ""
+                
                 with st.container(height=300): 
                     for name, message in st.session_state.generated_messages.items():
                         col1, col2 = st.columns([0.9, 0.1])
@@ -333,10 +338,70 @@ else:
 
                         all_messages += f"---\n{name}:\n{message}\n\n"
 
+                        feedback_key = f"feedback_{name}"
+
+                        with st.expander(f"📝 Please provide your feedback", expanded=False):
+                            st.write("Your feedback matters! Let us know how we can improve.")  # Simple, non-markdown text
+
+                            # Check if feedback was already submitted
+                            feedback_submitted = feedback_key in st.session_state["submitted_feedback"]
+
+                            if feedback_submitted:
+                                st.success("✅ You have already submitted feedback for this message.")
+
+                            # Form Layout (Visible but submission is disabled after first submission)
+                            with st.form(key=f"feedback_form_{name}"):
+                                # Streamlit's Built-in Thumbs Feedback Component
+                                feedback_result = st.feedback("thumbs", key=f"feedback_option_{name}")
+
+                                feedback_value = 0  # Default
+                                if feedback_result == 1:  # 👍 Selected
+                                    feedback_value = 1
+                                elif feedback_result == 0:  # 👎 Selected
+                                    feedback_value = -1
+
+                                st.write("Rate this message:")
+                                rating = st.feedback("stars", key=f"rating_{name}")
+
+                                # Ensure rating is always an integer (Defaults to 3 if None)
+                                rating = int(rating) if rating is not None else 3
+
+                                # Comment Box
+                                feedback_comment = st.text_area("Additional Comments (Optional)", key=f"comment_{name}")
+
+                                # Flag for Review
+                                flagged = st.checkbox("Flag for Review", key=f"flagged_{name}")
+
+                                # Submit Button (Disabled if feedback already submitted)
+                                submitted = st.form_submit_button(
+                                    "Submit Feedback",
+                                    disabled=feedback_submitted  # Button becomes translucent after submission
+                                )
+
+                                if submitted and not feedback_submitted:
+                                    try:
+                                        save_feedback(
+                                            str(st.session_state.chat_id),
+                                            name,  # The recipient of the message
+                                            message,  # The generated message content
+                                            int(feedback_value),  # Always an integer
+                                            "Message Rating",
+                                            feedback_comment if feedback_comment else None,
+                                            bool(flagged),
+                                            int(rating)  # Always an integer
+                                        )
+                                        st.success("✅ Thanks for sharing your feedback!")
+
+                                        # Mark feedback as submitted to prevent re-submission
+                                        st.session_state["submitted_feedback"][feedback_key] = True
+
+                                    except Exception as e:
+                                        st.warning(f"⚠️ An error occurred while saving feedback: {e}")
+
                 if all_messages:
                     st.download_button("Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
-        else:
-            st.info("Please select one or more profiles from the dropdown.")
+
+
     else:
         st.warning("Please search for profiles before using this feature.")    
         if st.button("Go to Prospect Finder", use_container_width=True):
