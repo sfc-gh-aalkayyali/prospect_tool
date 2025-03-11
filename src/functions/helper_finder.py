@@ -7,6 +7,7 @@ import streamlit.components.v1 as components
 import re
 import copy
 
+session = create_session()
 
 def init_config_options_finder():
     st.session_state.selected_cortex_search_service = "LINKEDIN_SERVICE"
@@ -66,7 +67,6 @@ def table_complete_function(prompt):
     if response.startswith("I don't know the answer to that question.") or response.startswith("An error occurred:"):
         return response
 
-    print(response)
     # Split individual profiles
     profiles = re.split(r" \| ", response)
 
@@ -196,6 +196,29 @@ def create_table_prompt(user_question):
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
     return prompt
 
+
+def generate_explanations(profiles):
+    last_user_message = str({
+    "user": next((msg["content"] for msg in reversed(st.session_state.general_messages) if msg["role"] == "user"), ""),
+    })
+    
+    with open("src/prompts/llm_feedback.txt", "r") as file:
+        system_prompt = file.read()
+
+    user_prompt = f"""
+[INST]
+<chat_history>
+{last_user_message}
+</chat_history>
+<profiles>
+{profiles}
+</profiles>
+[/INST]
+""".strip()
+    
+    prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+    response = Complete(model='llama3.1-70b', prompt=prompt, options=CompleteOptions(temperature=0, top_p=0), session=session)
+    return response
 
 def create_query_prompt(user_question):
     if st.session_state.use_chat_history:

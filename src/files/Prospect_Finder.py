@@ -111,7 +111,7 @@ if search_profile_toggle:
         key="general_num_retrieved_chunks",
         min_value=1,
         value=80,
-        max_value=300,
+        max_value=400,
         help="*Limits the maximum number of documents returned from Cortex Search. A higher number will affect performace.*"
     )
 
@@ -167,10 +167,6 @@ def save_chat_history():
             chat_title = "Untitled Chat"
         save_chat(datetime.now(), st.session_state.username, st.session_state.chat_id, chat_title, st.session_state.general_messages, st.session_state.general_chat_history)
 
-# def submit_feedback():
-#     if st.session_state.feedback_text.strip():  # Ensure feedback is not blank
-#         st.session_state.feedback_submitted = True
-
 def save_feedback(feedback_id, rating, feedback_text=""):
     chat_id = str(st.session_state.chat_id)
 
@@ -191,7 +187,7 @@ def save_feedback(feedback_id, rating, feedback_text=""):
 
     except Exception as e:
         st.toast(f"Error saving feedback: {e}", icon="❌")
-
+    
 # Function to handle feedback submission
 def handle_feedback_submission(rating):
 
@@ -311,7 +307,7 @@ for index, message in enumerate(st.session_state.general_messages):
                 paginationPageSize=20)
             
             filtered_df = pd.DataFrame(grid_response['data'])
-
+    
             if st.session_state.generated_profiles:
                 del st.session_state.generated_profiles
                 st.session_state.generated_profiles = []
@@ -382,7 +378,13 @@ if len(st.session_state.general_messages) > 0:
                 key="feedback_text",
                 disabled=st.session_state.thumbs_button
             )
-
+    last_message = st.session_state.general_messages[-1]
+    if isinstance(last_message["content"], pd.DataFrame):
+        with col4:
+            if st.button("Generate Explanation", use_container_width=True):
+                with st.sidebar.expander("LLM Explanations", expanded=False):
+                    response = generate_explanations(last_message["content"].to_json(orient="records"))
+                    st.markdown(response)
     save_chat_history()
     components.html(html_code, height=0)
 
