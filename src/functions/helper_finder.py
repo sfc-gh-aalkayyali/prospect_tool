@@ -354,9 +354,9 @@ def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summa
 
 from datetime import datetime
 
-def save_feedback(chat_id, user_input, model_response, feedback_score, feedback_category, feedback_comment, flagged, rating):
+def save_feedback(chat_id, user_input, model_response, feedback_score, feedback_category, feedback_comment, flagged):
     """
-    Save user feedback into Snowflake, now including thumbs feedback and star rating.
+    Save user feedback into Snowflake, now including thumbs feedback.
     Ensures explicit type conversion to avoid Snowflake mapping errors.
     """
     # Convert DataFrame inputs to string if necessary
@@ -371,15 +371,15 @@ def save_feedback(chat_id, user_input, model_response, feedback_score, feedback_
         model_response = str(model_response)
 
     # Ensure safe integer conversions
-    feedback_score = int(feedback_score) if feedback_score is not None else 0  # Defaults to 0 if None
-    rating = int(rating) if rating is not None else 3  # Defaults to 3 if None
+    # feedback_score = int(feedback_score) if feedback_score is not None else 0  # Defaults to 0 if None
+    # rating = int(rating) if rating is not None else 3  # Defaults to 3 if None
 
     # Insert into Snowflake with feedback_score (thumbs) and rating (stars)
     session.sql(
         """
         INSERT INTO LINKEDIN.PUBLIC.LLM_FEEDBACK
-        (CHAT_ID, USER_INPUT, MODEL_RESPONSE, FEEDBACK_SCORE, FEEDBACK_COMMENT, FLAGGED, RATING, TIMESTAMP)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (CHAT_ID, USER_INPUT, MODEL_RESPONSE, FEEDBACK_SCORE, FEEDBACK_COMMENT, FLAGGED, TIMESTAMP)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         params=[
             str(chat_id),  
@@ -389,7 +389,7 @@ def save_feedback(chat_id, user_input, model_response, feedback_score, feedback_
             # str(feedback_category) if feedback_category else "Other",  
             str(feedback_comment) if feedback_comment else None,  
             bool(flagged),  
-            rating,  # 1-5 star rating
+            # rating,  # 1-5 star rating
             datetime.now()  
         ]
     ).collect()

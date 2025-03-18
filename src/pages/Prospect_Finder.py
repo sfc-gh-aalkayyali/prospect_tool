@@ -329,11 +329,11 @@ for index, message in enumerate(st.session_state.general_messages):
                 elif feedback_result == 0:  # 👎 Selected
                     feedback_value = -1
 
-                st.write("Rate this response:")
-                rating = st.feedback("stars", key=f"rating_{index}")
+                # st.write("Rate this response:")
+                # rating = st.feedback("stars", key=f"rating_{index}")
 
-                # Ensure rating is always an integer (Defaults to 3 if None)
-                rating = int(rating) if rating is not None else 3
+                # # Ensure rating is always an integer (Defaults to 3 if None)
+                # rating = int(rating) if rating is not None else 3
 
                 # Comment Box
                 feedback_comment = st.text_area("Additional Comments (Optional)", key=f"comment_{index}")
@@ -362,10 +362,10 @@ for index, message in enumerate(st.session_state.general_messages):
                             user_input,
                             model_response,
                             int(feedback_value),  # Always an integer
-                            "Rating",
+                          
                             feedback_comment if feedback_comment else None,
-                            bool(flagged),
-                            int(rating)  # Always an integer
+                            bool(flagged)
+                         
                         )
                         st.success("✅ Feedback submitted successfully. Thank you for sharing!")
 

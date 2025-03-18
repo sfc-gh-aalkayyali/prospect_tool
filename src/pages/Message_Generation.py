@@ -360,11 +360,11 @@ else:
                                 elif feedback_result == 0:  # 👎 Selected
                                     feedback_value = -1
 
-                                st.write("Rate this message:")
-                                rating = st.feedback("stars", key=f"rating_{name}")
+                                # st.write("Rate this message:")
+                                # rating = st.feedback("stars", key=f"rating_{name}")
 
-                                # Ensure rating is always an integer (Defaults to 3 if None)
-                                rating = int(rating) if rating is not None else 3
+                                # # Ensure rating is always an integer (Defaults to 3 if None)
+                                # rating = int(rating) if rating is not None else 3
 
                                 # Comment Box
                                 feedback_comment = st.text_area("Additional Comments (Optional)", key=f"comment_{name}")
@@ -385,10 +385,10 @@ else:
                                             name,  # The recipient of the message
                                             message,  # The generated message content
                                             int(feedback_value),  # Always an integer
-                                            "Message Rating",
+                                            # "Message Rating",
                                             feedback_comment if feedback_comment else None,
-                                            bool(flagged),
-                                            int(rating)  # Always an integer
+                                            bool(flagged)
+                                            # int(rating)  # Always an integer
                                         )
                                         st.success("✅ Thanks for sharing your feedback!")
 
