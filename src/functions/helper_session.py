@@ -56,7 +56,6 @@ def get_connection_params():
 @st.cache_resource
 def create_session():
     session = Session.builder.configs(get_connection_params()).create()
-    session.sql("USE ROLE SDR").collect()
     session.sql("USE WAREHOUSE COMPUTE_WH").collect()
     session.sql("USE DATABASE LINKEDIN").collect()
     return session
