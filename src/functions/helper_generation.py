@@ -4,7 +4,7 @@ from functions.helper_global import *
 def init_config_options_generation():
     st.session_state.selected_cortex_search_service = "LINKEDIN_SERVICE"
 
-    with st.sidebar.expander("LLM Advanced Options"):
+    with st.sidebar.expander("LLM Options"):
         st.toggle("Use chat history", key="use_chat_history", value=True)
 
         # Selectbox using session state
@@ -58,10 +58,21 @@ def create_direct_message(profile):
 
     if st.session_state.selected_battle_cards:
         for battlecard in st.session_state.selected_battle_cards:
-            battle_card_content = f"""
+            battle_card_content += f"""
 <battlecard>
 {battlecard}
 </battlecard>
+""".strip()
+            
+
+    document_content = ""
+
+    if st.session_state.selected_document:
+        for selected_document in st.session_state.selected_document:
+            document_content += f"""
+<prospect_context>
+{selected_document["text"]}
+</prospect_context>
 """.strip()
 
     # Construct the final prompt
@@ -75,12 +86,12 @@ def create_direct_message(profile):
 </example>
 {story_content}
 {battle_card_content}
+{document_content}
 [/INST]
 """.strip()
 
     # Return the prompt in the expected format
     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-
     return prompt
 
 def find_stories():

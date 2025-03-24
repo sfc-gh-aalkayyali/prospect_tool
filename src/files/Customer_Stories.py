@@ -150,24 +150,22 @@ if st.session_state.logged_in and st.session_state.username == 'admin':
                 with st.spinner(text="In progress...",  show_time=True):
                     try:
                         session.sql(insert_query, params=params).collect()
-                        st.toast(f"Customer Story added!", icon="✅")
-
-                        # cortex_search_query = """
-                        #     CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
-                        #     ON text
-                        #     ATTRIBUTES industry
-                        #     WAREHOUSE = compute_wh
-                        #     TARGET_LAG = '24 hours'
-                        #     EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-                        #     AS (
-                        #         SELECT 
-                        #             text,
-                        #             industry,
-                        #         FROM LINKEDIN.public.stories
-                        #     );
-                        # """
-                        # session.sql(cortex_search_query).collect()
-                        # st.toast("Cortex Search function successfully updated!", icon="✅")
+                        cortex_search_query = """
+                            CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                            ON text
+                            ATTRIBUTES industry
+                            WAREHOUSE = compute_wh
+                            TARGET_LAG = '24 hours'
+                            EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                            AS (
+                                SELECT 
+                                    text,
+                                    industry,
+                                FROM LINKEDIN.public.stories
+                            );
+                        """
+                        session.sql(cortex_search_query).collect()
+                        st.toast("Cortex Search function successfully updated!", icon="✅")
                         del st.session_state.customer_story
                         st.session_state.customer_story = ''
                         del st.session_state.company_industry
@@ -226,60 +224,58 @@ if st.session_state.logged_in and st.session_state.username == 'admin':
                                     SET TEXT = ?
                                     WHERE STORY_ID = ?
                                 """
-                                # with st.spinner(text="Updating story...",  show_time=True):
-                                #     try:
-                                #         session.sql(update_query, params=[updated_story, story_id]).collect()
-                                #         st.toast(f"Updated story for!", icon="🎉")
+                                with st.spinner(text="Updating story...",  show_time=True):
+                                    try:
+                                        session.sql(update_query, params=[updated_story, story_id]).collect()
+                                        st.toast(f"Updated story for!", icon="🎉")
 
-                                #         # Re-run Cortex Search function to update search index
-                                #         cortex_search_query = """
-                                #             CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
-                                #             ON text
-                                #             ATTRIBUTES industry
-                                #             WAREHOUSE = compute_wh
-                                #             TARGET_LAG = '24 hours'
-                                #             EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-                                #             AS (
-                                #                 SELECT 
-                                #                     text
-                                #                 FROM LINKEDIN.public.stories
-                                #             );
-                                #         """
-                                #         session.sql(cortex_search_query).collect()
-                                #         st.toast("Cortex Search function successfully updated!", icon="✅")
+                                        # Re-run Cortex Search function to update search index
+                                        cortex_search_query = """
+                                            CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                                            ON text
+                                            ATTRIBUTES industry
+                                            WAREHOUSE = compute_wh
+                                            TARGET_LAG = '24 hours'
+                                            EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                                            AS (
+                                                SELECT 
+                                                    text
+                                                FROM LINKEDIN.public.stories
+                                            );
+                                        """
+                                        session.sql(cortex_search_query).collect()
+                                        st.toast("Cortex Search function successfully updated!", icon="✅")
 
-                                #     except Exception as e:
-                                #         st.error(f"Error updating story: {e}")
+                                    except Exception as e:
+                                        st.error(f"Error updating story: {e}")
 
                         with col2:
                             if st.button("Delete", key=f"delete_{story_id}", use_container_width=True):
                                 delete_query = "DELETE FROM STORIES WHERE STORY_ID = ?"
                                 session.sql(delete_query, params=[story_id]).collect()
                                 st.toast(f"Deleted story.", icon="🎉")
-                                # with st.spinner(text="Deleting story...",  show_time=True):
-                                #     try:
-                                #         session.sql(delete_query, params=[story_id]).collect()
-                                #         st.toast(f"Deleted story.", icon="🎉")
-
-                                #         # Re-run Cortex Search function to update search index
-                                #         cortex_search_query = """
-                                #             CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
-                                #             ON text
-                                #             ATTRIBUTES industry
-                                #             WAREHOUSE = compute_wh
-                                #             TARGET_LAG = '24 hours'
-                                #             EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-                                #             AS (
-                                #                 SELECT 
-                                #                     text
-                                #                 FROM LINKEDIN.public.stories
-                                #             );
-                                #         """
-                                #         session.sql(cortex_search_query).collect()
-                                #         st.toast("Cortex Search function successfully updated!", icon="✅")
-                                #         st.rerun()
-                                #     except Exception as e:
-                                #         st.error(f"Error deleting story: {e}")
+                                with st.spinner(text="Deleting story...",  show_time=True):
+                                    try:
+                                        session.sql(delete_query, params=[story_id]).collect()
+                                        # Re-run Cortex Search function to update search index
+                                        cortex_search_query = """
+                                            CREATE OR REPLACE CORTEX SEARCH SERVICE LINKEDIN.public.stories
+                                            ON text
+                                            ATTRIBUTES industry
+                                            WAREHOUSE = compute_wh
+                                            TARGET_LAG = '24 hours'
+                                            EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+                                            AS (
+                                                SELECT 
+                                                    text
+                                                FROM LINKEDIN.public.stories
+                                            );
+                                        """
+                                        session.sql(cortex_search_query).collect()
+                                        st.toast("Cortex Search function successfully updated!", icon="✅")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error deleting story: {e}")
 else:
     st.info("Only administrators can manage customer success stories.")
 

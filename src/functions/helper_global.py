@@ -49,7 +49,8 @@ def init_session_state():
         ("feedback_submitted", False),
         ("generated_profiles", []),
         ("feedback_text", ''),
-        ("feedback_error", '')]:
+        ("feedback_error", ''),
+        ("selected_document", [])]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             

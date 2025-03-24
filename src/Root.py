@@ -21,6 +21,7 @@ elif st.session_state.logged_in and st.session_state["username"] == 'admin':
             st.Page("files/Template_Manager.py", title="Template Manager"),
             st.Page("files/Customer_Stories.py", title="Customer Story Manager"),
             st.Page("files/Battle_Cards.py", title="Battle Cards Manager"),
+            st.Page("files/Customer_Documents.py", title="Prospect Documents")
         ]
     }
 elif st.session_state.logged_in and st.session_state["username"] != 'guest':
@@ -31,6 +32,7 @@ elif st.session_state.logged_in and st.session_state["username"] != 'guest':
             st.Page("files/Message_Generation.py", title="Message Generation"),
             st.Page("files/Chat_History.py", title="Chat History"),
             st.Page("files/Template_Manager.py", title="Template Manager"),
+            st.Page("files/Customer_Documents.py", title="Prospect Documents")
         ]
     }
 

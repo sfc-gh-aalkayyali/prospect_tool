@@ -157,7 +157,6 @@ else:
                         elif not selected and story in st.session_state.selected_customer_stories_docs:
                             st.session_state.selected_customer_stories_docs.remove(story)
 
-
             ### Add Battle Cards here
 
             st.markdown("---")
@@ -208,7 +207,60 @@ else:
                             st.session_state.selected_battle_cards.append(battle_card)
                         elif not selected and battle_card in st.session_state.selected_battle_cards:
                             st.session_state.selected_battle_cards.remove(battle_card)
+            query = f"""
+                    SELECT * FROM CUSTOMER_DOCUMENTS 
+                    WHERE USERNAME = ? ORDER BY DATE
+                """
 
+            documents = session.sql(query, params=[username]).collect()
+
+            if not documents:
+               pass
+            else:
+                # Search bar
+                st.markdown("---")
+                st.subheader("Prospect Documents (OPTIONAL)")
+                st.text_input("Search Prospect Documents", key='document_search2', placeholder="Type to search...").strip().lower()
+
+                filtered_documents = [story for story in documents if st.session_state.document_search2 in story["CONTENT"].lower()]
+
+                if st.session_state.document_search2 and not filtered_documents:
+                    st.warning("No prospect documents found.")
+                    if st.button("Reset Search", key="reset_document_search2", use_container_width=True):
+                        if st.session_state.document_search2:
+                            del st.session_state.document_search2
+                            st.session_state.document_search2 = ''
+                        st.rerun()
+
+                if filtered_documents:
+                    with st.container(height=300):  
+                        for number, story in enumerate(filtered_documents, start=1):
+                            with st.container(height=200):
+                                selected_document = st.checkbox(f"Select Document {number}", key=f"prospect_document_{number}")
+                                story_id = story["ID"]
+                                date_added = story["DATE"]
+                                title = story["TITLE"]
+                                customer = story["CUSTOMER"]
+                                text = story["CONTENT"]
+                                updated_name = st.text_input("Prospect Name", customer, key=f"industry2_{story_id}")
+                                updated_title = st.text_input("Prospect Title", title, key=f"title2_{story_id}")
+                                updated_text = st.text_area("Prospect Document", text, height=150, key=f"story2_{story_id}")
+
+                                current_doc = {
+                                    "id": story_id,
+                                    "customer": updated_name,
+                                    "title": updated_title,
+                                    "text": updated_text
+                                }
+
+                                already_selected = any(doc["id"] == story_id for doc in st.session_state.selected_document)
+
+                                if selected_document and not already_selected:
+                                    st.session_state.selected_document.append(current_doc)
+                                elif not selected_document and already_selected:
+                                    st.session_state.selected_document = [
+                                        doc for doc in st.session_state.selected_document if doc["id"] != story_id
+                                    ]
             st.markdown("---")
             st.markdown("### Customize & Save Template")
 
@@ -296,18 +348,39 @@ else:
             else:
                 st.warning("No templates available. Please create one in the template manager.")
 
+            token_counter = f"""SELECT SNOWFLAKE.CORTEX.COUNT_TOKENS(?, ?) as token_count;"""
+
+            ### set token limitation to 5% less than actual for a margin of error
+            token_count_limitation = {
+                "deepseek-r1": 31130,
+                "llama3.1-70b": 121600
+            }
+
             if st.button("Generate Messages", type="primary", use_container_width=True):
                 if st.session_state.system_prompt and st.session_state.sample_message and st.session_state.system_prompt.strip() != '' and st.session_state.sample_message.strip() != '':
                     with st.spinner("Generating messages...",  show_time=True):
-                        generated_messages = {
-                            f"{row['Full Name']}": complete_function(create_direct_message(row.to_dict()))
-                            for _, row in selected_profiles_df.iterrows()
-                        }
-                        st.session_state.generated_messages = generated_messages
+                        try:
+                            generated_messages = {}
+                            for _, row in selected_profiles_df.iterrows():
+                                message = create_direct_message(row.to_dict())
+                                token_count = session.sql(token_counter, params=[st.session_state.selected_model, str(message)]).collect()
+                                if token_count:
+                                    token_count = token_count[0]["TOKEN_COUNT"]
+                                    if token_count <= token_count_limitation[st.session_state.selected_model]:
+                                        generated_messages[row['Full Name']] = complete_function(message)
+                                    else:
+                                        st.error(f"""You have exceeded the input token limitation for the {st.session_state.selected_model} model.\n
+This model has an input limitation of roughly {token_count_limitation[st.session_state.selected_model]} tokens which is equivalent to about {round(token_count_limitation[st.session_state.selected_model]/4, 0):.0f} words.\n
+Current Model: {st.session_state.selected_model}\n
+Total Token Usage: {token_count} tokens\n
+Used {token_count} tokens out of {token_count_limitation[st.session_state.selected_model]} which is about {round((token_count / token_count_limitation[st.session_state.selected_model]) * 100, 0):.0f}% usage.""".strip())
+                                        st.info(f"""*If you are using the deepseek-r1 model and you are running into input token limitations please consider switching to llama3.1-70b as it has 4x more input token capacity.*\n
+*If you are still running into input token limitations after switching to the llama model, please consider removing or shortening customer documents, stories, battlecards.*""")
+                            st.session_state.generated_messages = generated_messages
+                        except Exception as e:
+                            st.error(e)
                 else:
                     st.warning("Please input a prompt and sample message to generate messages.")
-
-                
 
             if st.session_state.get("generated_messages"):
                 st.markdown("---")
@@ -329,7 +402,7 @@ else:
             st.info("Please select one or more profiles from the dropdown.")
     else:
         st.warning("Please search for profiles before using this feature.")    
-        if st.button("Go to Prospect Finder", use_container_width=True):
+        if st.button("Go to Prospect Finder", use_container_width=True, type="primary"):
             st.switch_page("files/Prospect_Finder.py")
         if st.session_state.logged_in and st.session_state.username != 'guest':
             if st.button("Go to Chat History", use_container_width=True):
