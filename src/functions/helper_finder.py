@@ -56,53 +56,193 @@ When top_p is 1, the model considers all possible tokens. As you decrease the to
                 st.write("Chat History")
                 st.markdown(st.session_state.general_chat_history)
 
-def table_complete_function(prompt):
-    if st.session_state.selected_model == 'deepseek-r1':
-        response = remove_think_tags(Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session))
-    else:
-        response = Complete(model=st.session_state.selected_model, prompt=prompt, options=CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p), session=session)
+def extract_partial_json_list(json_text):
+    valid_profiles = []
+    decoder = json.JSONDecoder()
     
-    response = response.strip()
+    # Use regex to find potential objects in the response
+    matches = re.finditer(r'{.*?}', json_text, re.DOTALL)
+    
+    for match in matches:
+        chunk = match.group()
+        try:
+            obj, _ = decoder.raw_decode(chunk)
+            valid_profiles.append(obj)
+        except json.JSONDecodeError:
+            continue
 
-    if response.startswith("I don't know the answer to that question.") or response.startswith("An error occurred:"):
-        return response
+    return valid_profiles
 
-    # Split individual profiles
-    profiles = re.split(r" \| ", response)
+def fetch_llm_response(prompt):
+    model = st.session_state.selected_model
+    options = CompleteOptions(temperature=st.session_state.temperature, top_p=st.session_state.top_p)
+    
+    response = Complete(model=model, prompt=prompt, options=options, session=session)
+    response = remove_think_tags(response) if model == 'deepseek-r1' else response
+    return response.strip()
 
-    placeholders = ", ".join(["?"] * len(profiles))
-    # Correct SQL query using parameterized binding
-    query = f"""
-        SELECT * FROM LINKEDIN.PUBLIC."LinkedIn Accounts" 
-        WHERE UNIQUE_ID IN ({placeholders})
-    """
+## Add batching logic here..
+def table_complete_function(question, num_profiles):
+    try:
+        # Initial LLM call
+        response_chunks = [] ## all the profiles
+        produced_profile_ids = set() ## generated profile ids
 
-    # Execute query with parameter binding (passing the list correctly)
-    df = session.sql(query, params=profiles).to_pandas()
+        batches = 1 ## curr batch
 
-    df = df[[
-    "FULLNAME", "COMPANYNAME", "INDUSTRY", "TITLE",  
-    "CLEANED_CLASSIFICATION", "LOCATION", "TITLEDESCRIPTION", 
-    "SUMMARY", "LINKEDINPROFILEURL", "DURATIONINROLE", 
-    "DURATIONINCOMPANY", "CONNECTIONDEGREE", "SHAREDCONNECTIONSCOUNT"
-]].rename(columns={
-    "FULLNAME": "Full Name",
-    "COMPANYNAME": "Company Name",
-    "INDUSTRY": "Industry",
-    "TITLE": "Job Title",
-    "CLEANED_CLASSIFICATION": "Classification",
-    "LOCATION": "Location",
-    "TITLEDESCRIPTION": "Job Description",
-    "SUMMARY": "Profile Summary",
-    "LINKEDINPROFILEURL": "LinkedIn URL",
-    "DURATIONINROLE": "Duration In Role",
-    "DURATIONINCOMPANY": "Duration At Company",
-    "CONNECTIONDEGREE": "Connection Degree",
-    "SHAREDCONNECTIONSCOUNT": "Shared Connections"
-})
-    return df
+        ##  input_prompt = f"<number_profiles_requested> THE USER HAS REQUESTED {num_profiles} PROFILES. </number_profiles_requested>\n" + 
+
+        chat_history = "" ## chat history
+        prev_profiles_string = "" ## string containing generated profiles
+        linkedin_profiles = "" ## string containing linkedin profiles
+
+        if st.session_state.use_chat_history:
+            history = make_chat_history_summary(get_general_chat_history(), question)
+            if history:
+                chat_history = f"<chat_history>{history}</chat_history>"
+
+        results, search_column = query_cortex_search_service(question)
+        st.session_state.general_people = []
+        for i, r in enumerate(results, start=1):
+            linkedin_profiles += f"<prospect_profile_{i}>Context document {i}: {r[search_column]}</prospect_profile_{i}>\n\n"
+            st.session_state.general_people.append(r[search_column])
+        
+        with open("src/prompts/table_system_prompt.txt", "r") as file:
+            system_prompt = file.read()
+
+        # for every 30 profiles up to the number of profiles requested
+        profile_id_reasoning_map = {}
+        if num_profiles <= 30:
+            st.toast(f"Batching results, currently on batch {batches}", icon="⏳")
+
+            ## Update user prompt
+            user_prompt = f"""
+            [INST]
+            {prev_profiles_string}
+            <question>
+            {question}
+            </question>
+            {chat_history}
+            {linkedin_profiles}
+            [/INST]
+            """.strip()
+        
+            prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+            
+            # call LLM to return profiles and add to chunk list
+            profiles = fetch_llm_response(prompt)
+            parsed_profiles = extract_partial_json_list(profiles)
+
+            valid_profiles = []
+            for item in parsed_profiles:
+                profile_id = item.get("profile") or item.get("profile_id")
+                reasoning = item.get("reasoning") or item.get("reason_id") or "No reasoning provided"
+
+                if profile_id and profile_id not in produced_profile_ids:
+                    produced_profile_ids.add(profile_id)
+                    profile_id_reasoning_map[profile_id] = reasoning
+                    valid_profiles.append({
+                        "profile_id": profile_id,
+                        "reasoning": reasoning
+                    })
+
+            response_chunks.extend(valid_profiles)
 
 
+            print(response_chunks)
+
+            # if produced_profile_ids:
+            #     prev_profiles_string = f"<previously_returned_profiles>{str(produced_profile_ids)}</previously_returned_profiles>"
+        else:
+            for i in range(0, num_profiles, 30):
+                st.toast(f"Batching results, currently on batch {batches}", icon="⏳")
+
+                ## Update user prompt
+                user_prompt = f"""
+                [INST]
+                {prev_profiles_string}
+                <question>
+                {question}
+                </question>
+                {chat_history}
+                {linkedin_profiles}
+                [/INST]
+                """.strip()
+            
+                prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+                
+                # call LLM to return profiles and add to chunk list
+                profiles = fetch_llm_response(prompt)
+                parsed_profiles = extract_partial_json_list(profiles)
+
+                valid_profiles = []
+                for item in parsed_profiles:
+                    profile_id = item.get("profile") or item.get("profile_id")
+                    reasoning = item.get("reasoning") or item.get("reason_id") or "No reasoning provided"
+
+                    if profile_id and profile_id not in produced_profile_ids:
+                        produced_profile_ids.add(profile_id)
+                        profile_id_reasoning_map[profile_id] = reasoning
+                        valid_profiles.append({
+                            "profile_id": profile_id,
+                            "reasoning": reasoning
+                        })
+
+                response_chunks.extend(valid_profiles)
+
+                print(response_chunks)
+
+                if produced_profile_ids:
+                    prev_profiles_string = f"<previously_returned_profiles>{str(produced_profile_ids)}</previously_returned_profiles>"
+
+                batches += 1
+        st.toast("Batching Complete", icon="✅")
+
+        profile_ids = list(profile_id_reasoning_map.keys())
+
+        placeholders = ", ".join(["?"] * len(profile_ids))
+        # Correct SQL query using parameterized binding
+        query = f"""
+            SELECT * FROM LINKEDIN.PUBLIC."LinkedIn Accounts" 
+            WHERE UNIQUE_ID IN ({placeholders})
+        """
+
+        # Execute query with parameter binding (passing the list correctly)
+        df = session.sql(query, params=profile_ids).to_pandas()
+
+        df = df[[
+            "FULLNAME", "COMPANYNAME", "INDUSTRY", "TITLE",  
+            "CLEANED_CLASSIFICATION", "LOCATION", "TITLEDESCRIPTION", 
+            "SUMMARY", "LINKEDINPROFILEURL", "DURATIONINROLE", 
+            "DURATIONINCOMPANY", "CONNECTIONDEGREE", "SHAREDCONNECTIONSCOUNT", "UNIQUE_ID"
+        ]].rename(columns={
+            "FULLNAME": "Full Name",
+            "COMPANYNAME": "Company Name",
+            "INDUSTRY": "Industry",
+            "TITLE": "Job Title",
+            "CLEANED_CLASSIFICATION": "Classification",
+            "LOCATION": "Location",
+            "TITLEDESCRIPTION": "Job Description",
+            "SUMMARY": "Profile Summary",
+            "LINKEDINPROFILEURL": "LinkedIn URL",
+            "DURATIONINROLE": "Duration In Role",
+            "DURATIONINCOMPANY": "Duration At Company",
+            "CONNECTIONDEGREE": "Connection Degree",
+            "SHAREDCONNECTIONSCOUNT": "Shared Connections",
+            "UNIQUE_ID":"UNIQUE_ID"
+        })
+
+        # Add the reasoning column, ensuring alignment
+        df["Reasoning"] = df["UNIQUE_ID"].map(profile_id_reasoning_map)
+        df = df.drop(columns = ["UNIQUE_ID"])
+
+        return df
+
+    except json.JSONDecodeError:
+        return "Error: Invalid JSON response from the model."
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
+    
 def convert_to_int(value):
     """Converts numeric strings to integers, handling missing or invalid values."""
     try:
@@ -162,39 +302,35 @@ def read_docx(file):
     doc = Document(file)
     return "\n".join([para.text for para in doc.paragraphs])
 
-def create_table_prompt(user_question):
-    if st.session_state.use_chat_history:
-        history = make_chat_history_summary(get_general_chat_history(), user_question)
-        chat_history = f"""
-<chat_history>
-{history}
-</chat_history>
-"""
-    else:
-        chat_history = ""
-
-    results, search_column = query_cortex_search_service(user_question)
-    context_str = ""
-    st.session_state.general_people = []
-    for i, r in enumerate(results, start=1):
-        context_str += f"<profile {i}>Context document {i}: {r[search_column]}</profile {i}>\n\n"
-        st.session_state.general_people.append(r[search_column])
+# def create_continuation_prompt(user_question, prev_profiles):
+#     if st.session_state.use_chat_history:
+#         history = make_chat_history_summary(get_general_chat_history(), user_question)
+#         chat_history = f"""
+# <chat_history>
+# {history}
+# </chat_history>
+# """
+#     else:
+#         chat_history = ""
     
-    with open("src/prompts/table_system_prompt.txt", "r") as file:
-        system_prompt = file.read()
+#     with open("src/prompts/continuation_prompt.txt", "r") as file:
+#         system_prompt = file.read()
 
-    user_prompt = f"""
-[INST]
-{chat_history}
-<question>
-{user_question}
-</question>
-{context_str}
-[/INST]
-""".strip()
+#     user_prompt = f"""
+# [INST]
+# <previous_profiles>
+# {prev_profiles}
+# </previous_profiles>
+# {chat_history}
+# <question>
+# {user_question}
+# </question>
+# {st.session_state.people_returned}
+# [/INST]
+# """.strip()
     
-    prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
-    return prompt
+#     prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
+#     return prompt
 
 
 def generate_explanations(profiles):
@@ -289,7 +425,9 @@ def generate_chat_title(chat_id, username, chat_history, session=session):
         {"role": "user", "content": user_prompt}
     ]
 
-    return Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=0.0, top_p=0.0), session=session)
+    title = Complete(model="llama3.1-70b", prompt=prompt, options=CompleteOptions(temperature=0.0, top_p=0.0), session=session)
+
+    return title.strip('"').strip("'")
 
 def save_chat(chat_date, username, chat_id, chat_title, chat_history, chat_summary, session=session):
     if not chat_history:

@@ -50,7 +50,10 @@ def init_session_state():
         ("generated_profiles", []),
         ("feedback_text", ''),
         ("feedback_error", ''),
-        ("selected_document", [])]:
+        ("selected_document", []),
+        ("previous_chat", ""),
+        ("user_question", ""),
+        ("people_returned", "")]:
         if key not in st.session_state:
             st.session_state[key] = default_value
             

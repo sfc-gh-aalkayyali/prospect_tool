@@ -48,6 +48,8 @@ init_service_metadata()
 search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles", help="If toggle is on it will activate Cortex Search to retrieve profiles when you query the chatbot. Conversely, if it is off you can query the LLM without retrieving profiles.")
 
 if search_profile_toggle:
+    number = st.sidebar.number_input("Number of Profiles to Return", min_value=30, value=30, step=1,max_value=100, key="number_profiles")
+
     if st.session_state.temperature:
         del st.session_state.temperature
         st.session_state.temperature = 0.0
@@ -111,7 +113,7 @@ if search_profile_toggle:
         key="general_num_retrieved_chunks",
         min_value=1,
         value=80,
-        max_value=400,
+        max_value=300,
         help="*Limits the maximum number of documents returned from Cortex Search. A higher number will affect performace.*"
     )
 
@@ -211,7 +213,7 @@ st.title(f":mag: Prospect Finder")
 st.markdown("---")
 
 suggested_prompts = [
-    "Retrieve 5 Data Engineers who have over 10 years of experience and extensive knowledge of related technologies.",
+    "Retrieve Data Engineers who have over 10 years of experience and extensive knowledge of related technologies.",
     "What technologies do Data Scientists typically use?",
     "How can Snowflake appeal to a customer?"
 ]
@@ -227,7 +229,7 @@ if st.session_state.selected_prompt and st.session_state.selected_prompt != None
         with st.spinner("Thinking...",  show_time=True):
             if search_profile_toggle:
                 try:
-                    generated_response = table_complete_function(create_table_prompt(st.session_state.selected_prompt))
+                    generated_response = table_complete_function(st.session_state.selected_prompt, st.session_state.number_profiles)
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
             else:
@@ -360,17 +362,8 @@ if len(st.session_state.general_messages) > 0:
     is_last_message = (
         index == len(st.session_state.general_messages) - 1 and message["role"] == "assistant"
     )
-    col0, col1, col2, col3, col4 = st.columns([1, 1.5, 1.5, 8, 7.5], gap="small")   
-
+    col0, col1, col2, col3 = st.columns([0.20, 3, 1, 1], gap="small")   
     with col1:
-        st.button("👍", use_container_width=True, disabled=st.session_state.thumbs_button, 
-                  on_click=lambda: handle_feedback_submission("Good"))
-
-    with col2:
-        st.button("👎", use_container_width=True, disabled=st.session_state.thumbs_button, 
-                  on_click=lambda: handle_feedback_submission("Bad"))
-
-    with col3:
         with st.expander("📝 Optional Feedback"):
             st.text_area(
                 "Please provide comments on how the output can be improved:", 
@@ -378,13 +371,20 @@ if len(st.session_state.general_messages) > 0:
                 key="feedback_text",
                 disabled=st.session_state.thumbs_button
             )
-    last_message = st.session_state.general_messages[-1]
-    if isinstance(last_message["content"], pd.DataFrame):
-        with col4:
-            if st.button("Generate Explanation", use_container_width=True):
-                with st.sidebar.expander("LLM Explanations", expanded=False):
-                    response = generate_explanations(last_message["content"].to_json(orient="records"))
-                    st.markdown(response)
+    with col2:
+        st.button("👍", use_container_width=True, disabled=st.session_state.thumbs_button, 
+                  on_click=lambda: handle_feedback_submission("Good"))
+
+    with col3:
+        st.button("👎", use_container_width=True, disabled=st.session_state.thumbs_button, 
+                  on_click=lambda: handle_feedback_submission("Bad"))
+    # last_message = st.session_state.general_messages[-1]
+    # if isinstance(last_message["content"], pd.DataFrame):
+        # with col4:
+        #     if st.button("Generate Explanation", use_container_width=True):
+        #         with st.sidebar.expander("LLM Explanations", expanded=False):
+        #             response = generate_explanations(last_message["content"].to_json(orient="records"))
+        #             st.markdown(response)
     save_chat_history()
     components.html(html_code, height=0)
 
@@ -402,11 +402,13 @@ if question:
         with st.spinner("Thinking...",  show_time=True):
             if search_profile_toggle:
                 try:
-                    generated_response = table_complete_function(create_table_prompt(question))
+                    st.session_state.user_question = question
+                    generated_response = table_complete_function(question, st.session_state.number_profiles)
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
             else:
                 try:
+                    st.session_state.user_question = question
                     generated_response = complete_function(create_query_prompt(question))
                 except Exception as e:
                     generated_response = "text", f"An error occurred: {e}"
