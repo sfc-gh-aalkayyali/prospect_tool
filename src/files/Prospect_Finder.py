@@ -50,6 +50,13 @@ search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="se
 if search_profile_toggle:
     number = st.sidebar.number_input("Max Number of Profiles to Return", min_value=5, value=10, step=1,max_value=100, key="number_profiles")
 
+    if number <= 30:
+        default_chunks = 100
+    elif number <= 60:
+        default_chunks = 200
+    else:
+        default_chunks = 300
+
     if st.session_state.temperature:
         del st.session_state.temperature
         st.session_state.temperature = 0.0
@@ -112,7 +119,7 @@ if search_profile_toggle:
         "Number of Documents for Cortex Search",
         key="general_num_retrieved_chunks",
         min_value=1,
-        value=80,
+        value=default_chunks,
         max_value=300,
         help="*Limits the maximum number of documents returned from Cortex Search. A higher number will affect performace.*"
     )
