@@ -192,7 +192,6 @@ def table_complete_function(question, num_profiles):
         # for every 30 profiles up to the number of profiles requested
         profile_id_reasoning_map = {}
         if num_profiles <= 30:
-            st.toast(f"Batching results, currently on batch {batches}", icon="⏳")
 
             ## Update user prompt
             user_prompt = f"""
@@ -205,6 +204,8 @@ def table_complete_function(question, num_profiles):
             {linkedin_profiles}
             [/INST]
             """.strip()
+
+            system_prompt = generate_system_prompt(num_profiles)
         
             prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
             

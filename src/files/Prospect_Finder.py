@@ -48,7 +48,7 @@ init_service_metadata()
 search_profile_toggle = st.sidebar.toggle("Search Profiles", value=True, key="search_profiles", help="If toggle is on it will activate Cortex Search to retrieve profiles when you query the chatbot. Conversely, if it is off you can query the LLM without retrieving profiles.")
 
 if search_profile_toggle:
-    number = st.sidebar.number_input("Number of Profiles to Return", min_value=30, value=30, step=1,max_value=100, key="number_profiles")
+    number = st.sidebar.number_input("Max Number of Profiles to Return", min_value=5, value=10, step=1,max_value=100, key="number_profiles")
 
     if st.session_state.temperature:
         del st.session_state.temperature
@@ -109,7 +109,7 @@ if search_profile_toggle:
         st.markdown("---")
 
         st.slider(
-        "Select number of documents to retrieve",
+        "Number of Documents for Cortex Search",
         key="general_num_retrieved_chunks",
         min_value=1,
         value=80,
