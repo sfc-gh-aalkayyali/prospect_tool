@@ -109,11 +109,54 @@ else:
 
         selected_profiles_df = people_df[people_df['Full Name'].isin(selected_names)]
 
+        
+        if not selected_profiles_df.empty and ("LinkedIn" in selected_profiles_df.columns or "LinkedIn URL" in selected_profiles_df.columns):
+            linkedin_col = "LinkedIn" if "LinkedIn" in selected_profiles_df.columns else "LinkedIn URL"
+            linkedin_urls = selected_profiles_df[linkedin_col].dropna().unique().tolist()
+
+            if linkedin_urls:
+                contact_query = f"""
+                    SELECT linkedin_url, contacted_by, contacted_on
+                    FROM LINKEDIN.PUBLIC.PROSPECT_TOUCH_LOG
+                    WHERE linkedin_url IN ({','.join(['?'] * len(linkedin_urls))})
+                    ORDER BY contacted_on DESC
+                """
+                logs_df = session.sql(contact_query, params=linkedin_urls).to_pandas()
+                logs_df.columns = [col.lower() for col in logs_df.columns]  # normalize to lowercase
+
+                if not logs_df.empty:
+                    contact_log_map = logs_df.groupby("linkedin_url").first().to_dict(orient="index")
+
+                    def get_contact_status(url):
+                        info = contact_log_map.get(url)
+                        if info:
+                            return f"⚠️ Contacted by {info['contacted_by']} on {pd.to_datetime(info['contacted_on']).strftime('%b %d')}"
+                        return "Not contacted"
+
+                    selected_profiles_df["Contact Status"] = selected_profiles_df[linkedin_col].apply(get_contact_status)
+                else:
+                    selected_profiles_df["Contact Status"] = "Not contacted"
+            else:
+                selected_profiles_df["Contact Status"] = "❓ No LinkedIn URL"
+
+       
         if not selected_profiles_df.empty:
             with st.container(height=300):
                 for index, row in selected_profiles_df.iterrows():
-                    profile_details = "\n".join([f"{col}: {val}" for col, val in row.items() if col not in ["Full Name"]])
-                    st.text_area(f"Profile: {row['Full Name']}", value=profile_details, height=200)
+                    contact_status = row.get("Contact Status", "❓ Unknown")
+
+                    st.markdown(f"**👤 {row['Full Name']}**")
+                    st.markdown(f"""🔍 <span style="color: red;">{contact_status}</span>""", unsafe_allow_html=True)
+
+                    profile_details = "\n".join([
+                        f"{col}: {val}" for col, val in row.items()
+                        if col not in ["Full Name", "Contact Status"]
+                    ])
+
+                    st.text_area(label="", value=profile_details, height=200)
+
+
+
 
             st.markdown("---")
             st.markdown("### Customer Success Stories (OPTIONAL)")
@@ -398,8 +441,75 @@ Used {token_count} tokens out of {token_count_limitation[st.session_state.select
 
                 if all_messages:
                     st.download_button("Download All Messages", data=all_messages, file_name="all_generated_messages.txt", mime="text/plain", use_container_width=True, key="download_all")
-        else:
-            st.info("Please select one or more profiles from the dropdown.")
+
+
+    
+
+                # Add "Log Outreach" section
+                st.markdown("---")
+                st.markdown("### Log Outreach")
+
+                # Ensure outreach_notes is a dictionary
+                if "outreach_notes" not in st.session_state or not isinstance(st.session_state.outreach_notes, dict):
+                    st.session_state.outreach_notes = {}
+
+                with st.expander("Add notes for each profile before logging (optional)", expanded=True):
+                    for _, row in selected_profiles_df.iterrows():
+                        full_name = row["Full Name"]
+                        linkedin_url = row.get("LinkedIn") or row.get("LinkedIn URL") or row.get("linkedin_url", "")
+                        
+                        # Initialize note field if not present
+                        if linkedin_url not in st.session_state.outreach_notes:
+                            st.session_state.outreach_notes[linkedin_url] = ""
+
+                        st.session_state.outreach_notes[linkedin_url] = st.text_area(
+                            label=f"Notes for {full_name}",
+                            key=f"note_{linkedin_url}",
+                            value=st.session_state.outreach_notes[linkedin_url],
+                            placeholder="Add notes here...",
+                            height=100
+                        )
+
+                # if st.button("📩 Log Outreach", use_container_width=True):
+                if st.button("📩 Log Outreach", use_container_width=True):
+                    try:
+                        insert_query = """
+                            INSERT INTO LINKEDIN.PUBLIC.PROSPECT_TOUCH_LOG 
+                            (linkedin_url, contacted_by, contact_method, notes)
+                            VALUES (?, ?, ?, ?)
+                        """
+
+                        count_logged = 0
+                        for _, row in selected_profiles_df.iterrows():
+                            linkedin_url = row.get("LinkedIn") or row.get("LinkedIn URL") or row.get("linkedin_url", "")
+                            contacted_by = st.session_state.username
+                            contact_method = "outreach_message"
+                            notes = st.session_state.outreach_notes.get(linkedin_url, "")
+
+                            if linkedin_url:
+                                session.sql(insert_query, params=[
+                                    linkedin_url,
+                                    contacted_by,
+                                    contact_method,
+                                    notes
+                                ]).collect()
+                                count_logged += 1
+
+                                # Safely clear notes
+                                if linkedin_url in st.session_state.outreach_notes:
+                                    del st.session_state.outreach_notes[linkedin_url]
+
+                        st.success(f"✅ Outreach logged for {count_logged} profile(s).")
+                        st.rerun()
+
+                    except Exception as e:
+                        st.error(f"⚠️ Error logging outreach: {e}")
+
+
+
+
+            
+
     else:
         st.warning("Please search for profiles before using this feature.")    
         if st.button("Go to Prospect Finder", use_container_width=True, type="primary"):
