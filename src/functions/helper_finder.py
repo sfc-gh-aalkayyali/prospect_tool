@@ -81,6 +81,85 @@ def fetch_llm_response(prompt):
     response = remove_think_tags(response) if model == 'deepseek-r1' else response
     return response.strip()
 
+
+def generate_system_prompt(max_profiles):
+
+    prompt = f'''
+Your Role:
+You are an AI assistant with Retrieval-Augmented Generation (RAG) capabilities. Your role is to help Snowflake employees identify high-potential LinkedIn prospects based on the user's query.
+
+You will be Provided:
+1. A user query inside <question> and </question> tags.
+2. LinkedIn profiles inside numbered <prospect_profile_N> and </prospect_profile_N> tags.
+3. Previously returned profile IDs inside <previously_returned_profiles> and </previously_returned_profiles> tags if this LLM call is not the first batch.
+4. Chat History inside <chat_history> and </chat_history> tags if it exists.
+
+Your Task:
+You must return up to {max_profiles} NEW and UNIQUE high-potential LinkedIn profiles not previously returned in any earlier batch.
+
+Selection Criteria:
+- Select only profiles most relevant to the user query, based on skills, job titles, industries, experience, or keywords found in the profile content.
+- Provide a 2–3 sentence justification for why each selected profile is a good fit, using specific information from their profile.
+
+Do NOT Include:
+- Any profile listed inside <previously_returned_profiles> and </previously_returned_profiles> tags.
+- Any duplicate profile within this batch or previous batches.
+- Strictly NEVER output more than {max_profiles} profiles. Even if the user asks for more.
+
+Rules to Follow:
+- If fewer than 30 new relevant profiles exist, return only those.
+- If no relevant new profiles exist, return an empty array: []
+- If the user query is unrelated to the profiles or chat history, respond exactly: I don't know the answer to that question.
+- Your output must be a single valid JSON array with profile ID and reasoning only as per the template below. No extra commentary.
+
+---
+
+Input Format:
+<previously_returned_profiles>
+{{JSON of previously returned profiles to exclude
+}}</previously_returned_profiles>
+
+<question>
+{{User Query...}}
+</question>
+
+<chat_history>
+{{Chat History...}}
+</chat_history>
+
+<prospect_profile_1>
+{{Profile 1 details...}}
+</prospect_profile_1>
+
+<prospect_profile_2>
+{{Profile 2 details...}}
+</prospect_profile_2>
+
+---
+
+Output Format (DO NOT OUTPUT MORE THAN 30 PROFILES):
+[
+    {{
+    "profile": "35e08d60-61d7-428e-adef-83f5ceb2213v",
+    "reasoning": "Write YOUR reasoning here for Profile 1, directly referencing specific keywords from the profile."
+    }},
+    {{
+    "profile": "de9479a3-b476-451a-be66-578ed7913e34",
+    "reasoning": "Write YOUR reasoning here for Profile 2, directly referencing specific keywords from the profile."
+    }},
+    {{
+    "profile": "e5b8c2a3-9ef2-4a02-86dc-f49d082be463",
+    "reasoning": "Write YOUR reasoning here for Profile 3, directly referencing specific keywords from the profile."
+    }},
+    {{
+    "profile": "8fefa0b1-6a7e-48ed-87ef-e6ace2bb3c2e",
+    "reasoning": "Write YOUR reasoning here for Profile 4, directly referencing specific keywords from the profile."
+    }}
+]
+'''.strip()
+    
+    return prompt
+
 ## Add batching logic here..
 def table_complete_function(question, num_profiles):
     try:
@@ -155,8 +234,9 @@ def table_complete_function(question, num_profiles):
             #     prev_profiles_string = f"<previously_returned_profiles>{str(produced_profile_ids)}</previously_returned_profiles>"
         else:
             for i in range(0, num_profiles, 30):
+                max_this_batch = min(30, num_profiles - len(produced_profile_ids))
                 st.toast(f"Batching results, currently on batch {batches}", icon="⏳")
-
+                
                 ## Update user prompt
                 user_prompt = f"""
                 [INST]
@@ -168,6 +248,9 @@ def table_complete_function(question, num_profiles):
                 {linkedin_profiles}
                 [/INST]
                 """.strip()
+
+                system_prompt = generate_system_prompt(max_this_batch)
+                print(f"MAX PROFILES: {max_this_batch}\n\n")
             
                 prompt = [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}]
                 
@@ -194,7 +277,7 @@ def table_complete_function(question, num_profiles):
 
                 if produced_profile_ids:
                     prev_profiles_string = f"<previously_returned_profiles>{str(produced_profile_ids)}</previously_returned_profiles>"
-
+                
                 batches += 1
         st.toast("Batching Complete", icon="✅")
 
