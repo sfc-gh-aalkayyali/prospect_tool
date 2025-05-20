@@ -55,19 +55,12 @@ def get_connection_params():
 
 @st.cache_resource
 def create_session():
-    session = Session.builder.configs(get_connection_params()).create()
-    session.sql("USE WAREHOUSE COMPUTE_WH").collect()
-    session.sql("USE DATABASE LINKEDIN").collect()
+    try:
+        session = Session.builder.configs(get_connection_params()).create()
+        session.sql("USE WAREHOUSE COMPUTE_WH").collect()
+        session.sql("USE DATABASE LINKEDIN").collect()
+    except:
+        from snowflake.snowpark import Session
+        session = Session.builder.config("connection_name", "my_conn").create()
+        session.sql("USE DATABASE LINKEDIN").collect()
     return session
-
-# @st.cache_resource
-# def create_session():
-#     try:
-#         session = Session.builder.configs(get_connection_params()).create()
-#         session.sql("USE WAREHOUSE COMPUTE_WH").collect()
-#         session.sql("USE DATABASE LINKEDIN").collect()
-#     except:
-#         from snowflake.snowpark import Session
-#         session = Session.builder.config("connection_name", "my_conn").create()
-#         session.sql("USE DATABASE LINKEDIN").collect()
-#     return session
